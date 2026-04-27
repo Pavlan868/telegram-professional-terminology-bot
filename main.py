@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import random
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
@@ -9,14 +10,10 @@ from database import init_db, load_user_language, save_user_language, load_progr
 
 logging.basicConfig(level=logging.INFO)
 
-# === ТОКЕН ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ ===
+# Токен из переменных окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("❌ Переменная окружения BOT_TOKEN не задана!")
-
-# Webhook настройки для Render
-WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
-WEBHOOK_URL = os.getenv("RENDER_EXTERNAL_URL", "http://localhost:10000") + WEBHOOK_PATH
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -33,14 +30,10 @@ except json.JSONDecodeError as e:
     exit(1)
 
 FIRST_BLOCK_ID = {
-    "Python": 1,
-    "C++": 6,
-    "Java": 11,
-    "JavaScript": 16,
-    "Git": 21
+    "Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21
 }
 
-# Асинхронные обёртки для работы с БД
+# Асинхронные обёртки для БД
 async def async_load_progress(user_id):
     loop = asyncio.get_event_loop()
     from functools import partial
@@ -94,11 +87,8 @@ async def start(message: Message):
 async def handle_language_selection(message: Message):
     uid = message.from_user.id
     lang_map = {
-        "🐍 Python": "Python",
-        "CppClass C++": "C++",
-        "☕ Java": "Java",
-        "📜 JavaScript": "JavaScript",
-        "🌱 Git": "Git"
+        "🐍 Python": "Python", "CppClass C++": "C++", "☕ Java": "Java",
+        "📜 JavaScript": "JavaScript", "🌱 Git": "Git"
     }
     lang = lang_map.get(message.text)
     if not lang:
@@ -108,11 +98,7 @@ async def handle_language_selection(message: Message):
     progress = load_progress(uid)
     first_block_id = FIRST_BLOCK_ID[lang]
     if lang not in progress:
-        progress[lang] = {
-            "current_block": first_block_id,
-            "completed_blocks": [],
-            "current_attempt": None
-        }
+        progress[lang] = {"current_block": first_block_id, "completed_blocks": [], "current_attempt": None}
         save_progress(uid, progress)
     await message.answer(f"Отлично! Вы выбрали: **{lang}**.", parse_mode=None)
     await message.answer("Главное меню:", reply_markup=get_main_keyboard(uid))
@@ -141,10 +127,7 @@ async def learn(message: Message):
     if not block or not block.get("terms"):
         await message.answer("В этом блоке нет терминов.")
         return
-    terms_text = "\n\n".join([
-        f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```"
-        for t in block["terms"]
-    ])
+    terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await message.answer(f"📘 Тема: **{block['title']}**\n\n{terms_text}", parse_mode=None)
 
 @dp.message(lambda m: m.text == "🧠 Задание")
@@ -164,27 +147,15 @@ async def task(message: Message):
     if not block or not block.get("tasks"):
         await message.answer("В этом блоке нет заданий.")
         return
-    import random
     selected = random.sample(block["tasks"], min(5, len(block["tasks"])))
-    new_attempt = {
-        "block_id": current_block_id,
-        "questions": selected,
-        "index": 0,
-        "correct": 0,
-        "total": len(selected),
-        "mode": "block"
-    }
+    new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block"}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
     q = selected[0]
     code = f"```\n{q['code']}\n```"
     options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     text = f"{q['question']}\n\n{code}\n\n{options_text}"
-    buttons = [
-        [InlineKeyboardButton(text="1", callback_data="ans_1")],
-        [InlineKeyboardButton(text="2", callback_data="ans_2")],
-        [InlineKeyboardButton(text="3", callback_data="ans_3")]
-    ]
+    buttons = [[InlineKeyboardButton(text=str(i+1), callback_data=f"ans_{i+1}")] for i in range(3)]
     await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
 @dp.message(lambda m: m.text == "🔁 Повторить обучение")
@@ -206,20 +177,16 @@ async def repeat_learn(message: Message):
     if not blocks_to_show:
         await message.answer("Нет пройденных тем для повторения.")
         return
-    buttons = []
-    for block in blocks_to_show:
-        buttons.append([
-            InlineKeyboardButton(text=block["title"], callback_data=f"repeat_block_{block['id']}")
-        ])
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    await message.answer("Выберите тему для повторения:", reply_markup=keyboard)
+    buttons = [[InlineKeyboardButton(text=block["title"], callback_data=f"repeat_block_{block['id']}")] for block in blocks_to_show]
+    await message.answer("Выберите тему для повторения:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
 @dp.callback_query(lambda c: c.data.startswith("repeat_block_"))
 async def handle_repeat_block_selection(callback: CallbackQuery):
+    await callback.answer()
     uid = callback.from_user.id
     lang = load_user_language(uid)
     if not lang:
-        await callback.answer("Сначала выберите язык!")
+        await callback.message.answer("Сначала выберите язык!")
         return
     try:
         block_id = int(callback.data.split("_")[-1])
@@ -230,12 +197,8 @@ async def handle_repeat_block_selection(callback: CallbackQuery):
     if not block or not block.get("terms"):
         await callback.message.answer("В этой теме нет терминов.")
         return
-    terms_text = "\n\n".join([
-        f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```"
-        for t in block["terms"]
-    ])
+    terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await callback.message.answer(f"📘 Тема: **{block['title']}**\n\n{terms_text}", parse_mode=None)
-    await callback.answer()
 
 @dp.message(lambda m: m.text == "🧪 Повторить тест")
 async def repeat_test(message: Message):
@@ -252,34 +215,19 @@ async def repeat_test(message: Message):
     completed = lang_data.get("completed_blocks", [])
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
     all_block_ids = set(completed + [current_block])
-    all_questions = []
-    for block in DATA["blocks"]:
-        if block["language"] == lang and block["id"] in all_block_ids and block.get("tasks"):
-            all_questions.extend(block["tasks"])
+    all_questions = [t for b in DATA["blocks"] if b["language"] == lang and b["id"] in all_block_ids and b.get("tasks") for t in b["tasks"]]
     if not all_questions:
         await message.answer("Нет вопросов для повторного теста.")
         return
-    import random
     selected = random.sample(all_questions, min(10, len(all_questions)))
-    new_attempt = {
-        "block_id": -1,
-        "questions": selected,
-        "index": 0,
-        "correct": 0,
-        "total": len(selected),
-        "mode": "repeat"
-    }
+    new_attempt = {"block_id": -1, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "repeat"}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
     q = selected[0]
     code = f"```\n{q['code']}\n```"
     options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     text = f"Вопрос 1 из {len(selected)}:\n\n{q['question']}\n\n{code}\n\n{options_text}"
-    buttons = [
-        [InlineKeyboardButton(text="1", callback_data="ans_1")],
-        [InlineKeyboardButton(text="2", callback_data="ans_2")],
-        [InlineKeyboardButton(text="3", callback_data="ans_3")]
-    ]
+    buttons = [[InlineKeyboardButton(text=str(i+1), callback_data=f"ans_{i+1}")] for i in range(3)]
     await message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
 @dp.callback_query(lambda c: c.data.startswith("ans_"))
@@ -314,15 +262,9 @@ async def handle_inline_answer(callback: CallbackQuery):
         total = attempt["total"]
         code = f"```\n{q_next['code']}\n```"
         options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q_next["options"])])
-        if attempt.get("mode") == "repeat":
-            text = f"Вопрос {attempt['index'] + 1} из {total}:\n\n{q_next['question']}\n\n{code}\n\n{options_text}"
-        else:
-            text = f"{q_next['question']}\n\n{code}\n\n{options_text}"
-        buttons = [
-            [InlineKeyboardButton(text="1", callback_data="ans_1")],
-            [InlineKeyboardButton(text="2", callback_data="ans_2")],
-            [InlineKeyboardButton(text="3", callback_data="ans_3")]
-        ]
+        prefix = f"Вопрос {attempt['index'] + 1} из {total}:\n\n" if attempt.get("mode") == "repeat" else ""
+        text = f"{prefix}{q_next['question']}\n\n{code}\n\n{options_text}"
+        buttons = [[InlineKeyboardButton(text=str(i+1), callback_data=f"ans_{i+1}")] for i in range(3)]
         await callback.message.answer(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     else:
         correct = attempt["correct"]
@@ -335,11 +277,7 @@ async def handle_inline_answer(callback: CallbackQuery):
             if next_block:
                 lang_data["completed_blocks"].append(attempt["block_id"])
                 lang_data["current_block"] = next_block_id
-                await callback.message.answer(
-                    f"🎉 Отлично! Следующая тема: **{next_block['title']}**",
-                    parse_mode=None,
-                    reply_markup=get_main_keyboard(uid)
-                )
+                await callback.message.answer(f"🎉 Отлично! Следующая тема: **{next_block['title']}**", parse_mode=None, reply_markup=get_main_keyboard(uid))
             else:
                 await callback.message.answer("🏆 Все темы пройдены!", reply_markup=get_main_keyboard(uid))
         elif mode == "repeat":
@@ -350,31 +288,10 @@ async def handle_inline_answer(callback: CallbackQuery):
         lang_data["current_attempt"] = None
         await async_save_progress(uid, progress)
 
-# === WEBHOOK SETUP ДЛЯ RENDER ===
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
-
-async def on_startup():
+async def main():
     init_db()
-    await bot.set_webhook(WEBHOOK_URL)
-    print(f"✅ Webhook установлен: {WEBHOOK_URL}")
+    print("✅ Бот запущен в режиме polling. Напишите /start в Telegram.")
+    await dp.start_polling(bot)
 
-async def on_shutdown():
-    await bot.delete_webhook()
-    await bot.session.close()
-
-def create_app():
-    app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
-    setup_application(app, dp, bot=bot)
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-    return app
-
-# === ЗАПУСК ===
 if __name__ == "__main__":
-    # Для Render: возвращаем app, чтобы сервер мог его запустить
-    app = create_app()
-    # Запускаем сервер на порту, который задаёт Render
-    port = int(os.getenv("PORT", 10000))
-    web.run_app(app, host="0.0.0.0", port=port)
+    asyncio.run(main())
