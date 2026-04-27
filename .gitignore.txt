@@ -1,0 +1,15 @@
+# Игнорируем файлы базы данных
+bot_data.db
+
+# Игнорируем временные файлы Python
+__pycache__/
+*.pyc
+
+# Игнорируем IDE-файлы
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.csproj
+*.vbproj

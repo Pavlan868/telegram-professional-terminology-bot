@@ -1,0 +1,2707 @@
+{
+  "blocks": [
+    {
+      "id": 1,
+      "language": "Python",
+      "title": "Основы ошибок в Python",
+      "description": "NameError, IndentationError, ModuleNotFoundError",
+      "terms": [
+        {
+          "term": "NameError",
+          "definition": "Использование несуществующей переменной",
+          "example": "print(x)  # x не определена"
+        },
+        {
+          "term": "IndentationError",
+          "definition": "Нарушение правил отступов",
+          "example": "if True:\n    print('A')  # нет отступа"
+        },
+        {
+          "term": "ModuleNotFoundError",
+          "definition": "Попытка импорта неустановленного модуля",
+          "example": "import requests  # если не установлен"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 1,
+          "question": "Что означает 'NameError: name \"x\" is not defined'?",
+          "code": "print(x)",
+          "options": ["Переменная x не создана", "Функция print сломана", "Нужно импортировать x"],
+          "correct": 0,
+          "explanation": "В Python нельзя использовать переменную до её создания."
+        },
+        {
+          "id": 2,
+          "question": "Как исправить 'IndentationError'?",
+          "code": "if True:\n    print('A')\n  print('B')",
+          "options": ["Выровнять отступы", "Удалить пробелы", "Добавить скобки"],
+          "correct": 0,
+          "explanation": "Все строки одного блока должны иметь одинаковый отступ."
+        },
+        {
+          "id": 3,
+          "question": "Почему 'ModuleNotFoundError'?",
+          "code": "import requests",
+          "options": ["Библиотека не установлена", "Файл повреждён", "Нельзя импортировать"],
+          "correct": 0,
+          "explanation": "Нужно выполнить: pip install requests"
+        },
+        {
+          "id": 4,
+          "question": "Что означает 'TypeError: 'int' object is not iterable'?",
+          "code": "for i in 5:\n    print(i)",
+          "options": ["Целое число нельзя использовать в цикле for напрямую", "Нужно преобразовать 5 в строку", "Цикл for не поддерживает числа"],
+          "correct": 0,
+          "explanation": "Цикл for в Python работает только с итерируемыми объектами."
+        },
+        {
+          "id": 5,
+          "question": "Почему 'SyntaxError: invalid syntax' при if без двоеточия?",
+          "code": "if x == 5\n    print(x)",
+          "options": ["Пропущено двоеточие после условия", "Неправильный отступ", "Нужны скобки"],
+          "correct": 0,
+          "explanation": "В Python после условия if обязательно ставится ':'"
+        },
+        {
+          "id": 6,
+          "question": "Что такое 'UnboundLocalError'?",
+          "code": "def f():\n    print(x)\n    x = 1",
+          "options": ["Переменная используется до присваивания в функции", "Глобальная переменная не найдена", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Если в функции есть присваивание x, она считается локальной — но до присваивания её нельзя читать."
+        },
+        {
+          "id": 7,
+          "question": "Почему 'AttributeError: 'list' object has no attribute 'push'?",
+          "code": "arr = []\narr.push(1)",
+          "options": ["В Python метод называется append()", "Нужно использовать deque", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "В списках Python метод добавления — append(), а не push()."
+        },
+        {
+          "id": 8,
+          "question": "Что означает 'KeyError'?",
+          "code": "d = {'a': 1}\nprint(d['b'])",
+          "options": ["Ключ 'b' отсутствует в словаре", "Словарь пуст", "Неправильный тип ключа"],
+          "correct": 0,
+          "explanation": "KeyError возникает при обращении к несуществующему ключу словаря."
+        },
+        {
+          "id": 9,
+          "question": "Почему 'IndexError: list index out of range'?",
+          "code": "arr = [1,2,3]\nprint(arr[5])",
+          "options": ["Индекс 5 выходит за границы списка", "Список пуст", "Нужно использовать get()"],
+          "correct": 0,
+          "explanation": "Индексы списка начинаются с 0 и заканчиваются len-1."
+        },
+        {
+          "id": 10,
+          "question": "Как избежать 'ZeroDivisionError'?",
+          "code": "result = 10 / 0",
+          "options": ["Проверить делитель перед делением", "Использовать try-except", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Лучше проверять делитель, но можно и ловить исключение."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": true
+    },
+    {
+      "id": 2,
+      "language": "Python",
+      "title": "Исключения и отладка в Python",
+      "description": "try-except, traceback, logging",
+      "terms": [
+        {
+          "term": "Stack trace",
+          "definition": "Последовательность вызовов функций, приведших к ошибке",
+          "example": "File \"main.py\", line 5, in <module>\n  print(x)\nNameError: name 'x' is not defined"
+        },
+        {
+          "term": "Traceback",
+          "definition": "То же, что stack trace — вывод ошибки с контекстом",
+          "example": "Traceback (most recent call last): ..."
+        },
+        {
+          "term": "Logging",
+          "definition": "Система записи событий программы",
+          "example": "logging.error('Something went wrong')"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 11,
+          "question": "Что выводит 'traceback.print_exc()'?",
+          "code": "import traceback\ntry:\n    1/0\nexcept:\n    traceback.print_exc()",
+          "options": ["Полный стек вызовов ошибки", "Только тип ошибки", "Ничего"],
+          "correct": 0,
+          "explanation": "Эта функция печатает полную информацию об ошибке, как при неперехваченном исключении."
+        },
+        {
+          "id": 12,
+          "question": "Как поймать любое исключение?",
+          "code": "try:\n    risky_code()\nexcept Exception as e:\n    print(e)",
+          "options": ["Использовать except Exception", "Использовать except:", "Оба способа"],
+          "correct": 2,
+          "explanation": "except: ловит всё (включая SystemExit), except Exception — только пользовательские ошибки."
+        },
+        {
+          "id": 13,
+          "question": "Что такое 'finally' в try-except?",
+          "code": "try:\n    f = open('file')\nfinally:\n    f.close()",
+          "options": ["Блок, выполняющийся всегда, даже при ошибке", "Альтернатива except", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "finally гарантирует выполнение кода (например, закрытие файла)."
+        },
+        {
+          "id": 14,
+          "question": "Как получить сообщение об ошибке в except?",
+          "code": "try:\n    1/0\nexcept ZeroDivisionError as e:\n    print(str(e))",
+          "options": ["Через str(e)", "Через e.message", "Через e.args[0]"],
+          "correct": 0,
+          "explanation": "str(e) даёт человекочитаемое сообщение об ошибке."
+        },
+        {
+          "id": 15,
+          "question": "Почему 'bare except' (except:) считается плохой практикой?",
+          "code": "try:\n    code()\nexcept:\n    pass",
+          "options": ["Он перехватывает даже KeyboardInterrupt", "Медленно работает", "Не поддерживается"],
+          "correct": 0,
+          "explanation": "Такой except мешает остановить программу через Ctrl+C."
+        },
+        {
+          "id": 16,
+          "question": "Как выбросить своё исключение?",
+          "code": "raise ValueError(\"Invalid input\")",
+          "options": ["Использовать raise", "Использовать throw", "Использовать error()"],
+          "correct": 0,
+          "explanation": "В Python исключения выбрасываются через ключевое слово raise."
+        },
+        {
+          "id": 17,
+          "question": "Что такое 'logging.exception()'?",
+          "code": "import logging\ntry:\n    1/0\nexcept:\n    logging.exception(\"Error occurred\")",
+          "options": ["Логирует ошибку с трассировкой стека", "Только текст ошибки", "Ничего не делает"],
+          "correct": 0,
+          "explanation": "Этот метод автоматически добавляет traceback к логу."
+        },
+        {
+          "id": 18,
+          "question": "Как проверить тип исключения?",
+          "code": "try:\n    code()\nexcept (ValueError, TypeError):\n    handle()",
+          "options": ["Указать несколько типов в кортеже", "Использовать if внутри except", "Нельзя"],
+          "correct": 0,
+          "explanation": "Можно перехватывать несколько типов исключений одновременно."
+        },
+        {
+          "id": 19,
+          "question": "Что делает 'else' в try-except?",
+          "code": "try:\n    x = int(s)\nexcept ValueError:\n    print(\"Bad\")\nelse:\n    print(\"Good\")",
+          "options": ["Выполняется, если исключения не было", "Альтернатива finally", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "Блок else выполняется только если в try не возникло исключения."
+        },
+        {
+          "id": 20,
+          "question": "Как сохранить оригинальный traceback при повторном выбросе?",
+          "code": "try:\n    risky()\nexcept Exception:\n    log_error()\n    raise",
+          "options": ["Использовать raise без аргументов", "Использовать raise e", "Нельзя"],
+          "correct": 0,
+          "explanation": "Простой raise сохраняет оригинальный стек вызовов."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 3,
+      "language": "Python",
+      "title": "Работа с файлами и путями",
+      "description": "FileNotFoundError, PermissionError, path traversal",
+      "terms": [
+        {
+          "term": "Path traversal",
+          "definition": "Уязвимость, позволяющая читать файлы вне целевой директории",
+          "example": "open('../../../etc/passwd')"
+        },
+        {
+          "term": "File descriptor",
+          "definition": "Целое число, идентифицирующее открытый файл в ОС",
+          "example": "fd = os.open('file.txt', os.O_RDONLY)"
+        },
+        {
+          "term": "with statement",
+          "definition": "Контекстный менеджер для безопасной работы с ресурсами",
+          "example": "with open('file.txt') as f:\n    data = f.read()"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 21,
+          "question": "Почему 'FileNotFoundError' в Python?",
+          "code": "open('nonexistent.txt')",
+          "options": ["Файл не существует", "Нет прав", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "open() вызывает FileNotFoundError, если файл не найден."
+        },
+        {
+          "id": 22,
+          "question": "Как безопасно открыть файл в Python?",
+          "code": "with open('file.txt') as f:\n    data = f.read()",
+          "options": ["Использовать with", "Использовать try-finally", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Конструкция with автоматически закрывает файл даже при ошибке."
+        },
+        {
+          "id": 23,
+          "question": "Что такое 'path traversal'?",
+          "code": "user_input = '../../etc/passwd'\nopen(user_input)",
+          "options": ["Попытка доступа к файлам вне разрешённой директории", "Ошибка пути", "Синтаксическая ошибка"],
+          "correct": 0,
+          "explanation": "Path traversal — серьёзная уязвимость безопасности."
+        },
+        {
+          "id": 24,
+          "question": "Почему 'PermissionError' при записи файла?",
+          "code": "open('/root/file.txt', 'w')",
+          "options": ["Нет прав на запись в эту директорию", "Файл занят", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "Операционная система запрещает запись в защищённые директории."
+        },
+        {
+          "id": 25,
+          "question": "Как проверить существование файла в Python?",
+          "code": "import os\nif os.path.exists('file.txt'): ...",
+          "options": ["os.path.exists()", "try-except", "Оба варианта"],
+          "correct": 2,
+          "explanation": "EAFP (Easier to Ask for Forgiveness than Permission) часто предпочтительнее LBYL."
+        },
+        {
+          "id": 26,
+          "question": "Что делает 'os.path.join()'?",
+          "code": "os.path.join('dir', 'file.txt')",
+          "options": ["Создаёт правильный путь для ОС", "Объединяет строки", "Ошибка"],
+          "correct": 0,
+          "explanation": "os.path.join() использует правильный разделитель (/ или \\) в зависимости от ОС."
+        },
+        {
+          "id": 27,
+          "question": "Почему 'IsADirectoryError' при чтении?",
+          "code": "open('/home/user')",
+          "options": ["Пытаемся открыть директорию как файл", "Нет прав", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "Директорию нельзя открыть в режиме чтения как файл."
+        },
+        {
+          "id": 28,
+          "question": "Как получить абсолютный путь?",
+          "code": "os.path.abspath('file.txt')",
+          "options": ["os.path.abspath()", "os.getcwd()", "os.path.realpath()"],
+          "correct": 0,
+          "explanation": "abspath() преобразует относительный путь в абсолютный."
+        },
+        {
+          "id": 29,
+          "question": "Что такое 'file descriptor leak'?",
+          "code": "while True:\n    fd = os.open('file.txt', os.O_RDONLY)",
+          "options": ["Не закрытые файловые дескрипторы исчерпывают лимит ОС", "Утечка памяти", "Ошибка"],
+          "correct": 0,
+          "explanation": "Каждый процесс имеет лимит на количество открытых файлов."
+        },
+        {
+          "id": 30,
+          "question": "Как избежать 'Too many open files'?",
+          "code": "with open('file.txt') as f:\n    process(f)",
+          "options": ["Использовать with или закрывать файлы явно", "Увеличить лимит ОС", "Оба варианта"],
+          "correct": 0,
+          "explanation": "Правильное управление ресурсами — ключ к надёжности."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 4,
+      "language": "Python",
+      "title": "Асинхронность и сетевые ошибки",
+      "description": "async/await, TimeoutError, CORS",
+      "terms": [
+        {
+          "term": "Event loop",
+          "definition": "Механизм обработки асинхронных операций в Python",
+          "example": "asyncio.run(main())"
+        },
+        {
+          "term": "TimeoutError",
+          "definition": "Ошибка при превышении времени ожидания ответа",
+          "example": "requests.get(url, timeout=1)"
+        },
+        {
+          "term": "CORS",
+          "definition": "Cross-Origin Resource Sharing — механизм безопасности браузера",
+          "example": "Access to fetch blocked by CORS policy"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 31,
+          "question": "Почему 'TimeoutError'?",
+          "code": "requests.get('http://slow-server.com', timeout=1)",
+          "options": ["Сервер не ответил за отведённое время", "Нет интернета", "Ошибка DNS"],
+          "correct": 0,
+          "explanation": "Таймаут срабатывает, если сервер не отвечает дольше указанного времени."
+        },
+        {
+          "id": 32,
+          "question": "Что такое 'CORS error' в браузере?",
+          "code": "fetch('https://api.example.com/data')",
+          "options": ["Браузер блокирует запрос из-за политики безопасности", "Ошибка сервера", "Нет интернета"],
+          "correct": 0,
+          "explanation": "CORS требует, чтобы сервер разрешил запросы с другого origin."
+        },
+        {
+          "id": 33,
+          "question": "Как обработать HTTP 404 в Python?",
+          "code": "resp = requests.get(url)\nif resp.status_code == 404: ...",
+          "options": ["Проверить status_code", "Поймать исключение", "Оба варианта"],
+          "correct": 0,
+          "explanation": "requests не вызывает исключение для 4xx/5xx по умолчанию."
+        },
+        {
+          "id": 34,
+          "question": "Что делает 'requests.raise_for_status()'?",
+          "code": "resp = requests.get(url)\nresp.raise_for_status()",
+          "options": ["Выбрасывает исключение для HTTP ошибок", "Печатает статус", "Ошибка"],
+          "correct": 0,
+          "explanation": "Этот метод вызывает HTTPError для статусов 4xx и 5xx."
+        },
+        {
+          "id": 35,
+          "question": "Почему 'SSL: CERTIFICATE_VERIFY_FAILED'?",
+          "code": "requests.get('https://expired-cert.com')",
+          "options": ["Сертификат сайта просрочен или недоверенный", "Нет интернета", "Ошибка DNS"],
+          "correct": 0,
+          "explanation": "SSL-сертификат не прошёл проверку подлинности."
+        },
+        {
+          "id": 36,
+          "question": "Что такое 'DNS lookup failed'?",
+          "code": "requests.get('http://nonexistent-domain.com')",
+          "options": ["Доменное имя не найдено в DNS", "Сервер не отвечает", "Ошибка сети"],
+          "correct": 0,
+          "explanation": "DNS не смог преобразовать имя в IP-адрес."
+        },
+        {
+          "id": 37,
+          "question": "Как отправить JSON в POST-запросе?",
+          "code": "requests.post(url, json={'key': 'value'})",
+          "options": ["Использовать параметр json", "Использовать data=json.dumps()", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Параметр json автоматически устанавливает Content-Type и сериализует данные."
+        },
+        {
+          "id": 38,
+          "question": "Что означает 'HTTP 500 Internal Server Error'?",
+          "code": "GET /api/crash → 500",
+          "options": ["Ошибка на стороне сервера", "Неправильный запрос", "Нет доступа"],
+          "correct": 0,
+          "explanation": "500 означает, что сервер столкнулся с непредвиденной ситуацией."
+        },
+        {
+          "id": 39,
+          "question": "Как добавить заголовок Authorization?",
+          "code": "requests.get(url, headers={'Authorization': 'Bearer token'})",
+          "options": ["Через параметр headers", "Через auth", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Для Bearer-токенов используется headers, для базовой аутентификации — auth."
+        },
+        {
+          "id": 40,
+          "question": "Как отменить fetch-запрос в asyncio?",
+          "code": "task = asyncio.create_task(fetch())\ntask.cancel()",
+          "options": ["Использовать task.cancel()", "Вызвать cancel()", "Нельзя"],
+          "correct": 0,
+          "explanation": "asyncio позволяет отменять задачи через cancel()."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 5,
+      "language": "Python",
+      "title": "Многопоточность и race condition",
+      "description": "threading, GIL, race condition",
+      "terms": [
+        {
+          "term": "Race condition",
+          "definition": "Состояние, при котором результат зависит от порядка выполнения потоков",
+          "example": "// Два потока увеличивают counter++ без синхронизации"
+        },
+        {
+          "term": "GIL",
+          "definition": "Global Interpreter Lock — блокировка, позволяющая выполнять байт-код только одному потоку",
+          "example": "import threading\n# Многопоточность не ускоряет CPU-bound задачи"
+        },
+        {
+          "term": "Thread-safe",
+          "definition": "Функция, безопасная для вызова из нескольких потоков",
+          "example": "queue.Queue.put()"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 41,
+          "question": "Что такое 'race condition'?",
+          "code": "// Два потока одновременно увеличивают одну переменную\nint counter = 0;\n// Поток A: counter++;\n// Поток B: counter++;",
+          "options": ["Состояние, при котором результат зависит от порядка выполнения потоков", "Ошибка компиляции", "Зависание программы"],
+          "correct": 0,
+          "explanation": "Race condition — ошибка времени выполнения при неконтролируемом доступе к общему ресурсу."
+        },
+        {
+          "id": 42,
+          "question": "Как предотвратить race condition?",
+          "code": "import threading\nlock = threading.Lock()\nwith lock:\n    counter += 1",
+          "options": ["Использовать блокировки (mutex, lock)", "Запускать потоки по одному", "Нельзя"],
+          "correct": 0,
+          "explanation": "Блокировки обеспечивают взаимное исключение при доступе к общему ресурсу."
+        },
+        {
+          "id": 43,
+          "question": "Почему 'GIL' в Python?",
+          "code": "import threading\n# Многопоточность не ускоряет CPU-bound задачи",
+          "options": ["Global Interpreter Lock позволяет выполнять байт-код только одному потоку", "Ошибка интерпретатора", "Нет многопоточности"],
+          "correct": 0,
+          "explanation": "GIL предотвращает одновременное выполнение Python-байткода несколькими потоками."
+        },
+        {
+          "id": 44,
+          "question": "Какой модуль использовать для CPU-bound задач в Python?",
+          "code": "from multiprocessing import Pool",
+          "options": ["multiprocessing", "threading", "asyncio"],
+          "correct": 0,
+          "explanation": "multiprocessing обходит GIL, создавая отдельные процессы."
+        },
+        {
+          "id": 45,
+          "question": "Что такое 'thread-safe' функция?",
+          "code": "queue.Queue.put()",
+          "options": ["Функция безопасна для вызова из нескольких потоков", "Функция быстрая", "Ошибка"],
+          "correct": 0,
+          "explanation": "Thread-safe функции используют внутреннюю синхронизацию."
+        },
+        {
+          "id": 46,
+          "question": "Почему 'ConcurrentModificationException' в Java?",
+          "code": "for (Item item : list) { list.remove(item); }",
+          "options": ["Изменение коллекции во время итерации", "Ошибка памяти", "Нет прав"],
+          "correct": 0,
+          "explanation": "Нельзя модифицировать коллекцию во время итерации без итератора."
+        },
+        {
+          "id": 47,
+          "question": "Что такое 'atomic operation'?",
+          "code": "std::atomic<int> counter;",
+          "options": ["Операция, которая выполняется без прерываний", "Операция с атомами", "Ошибка"],
+          "correct": 0,
+          "explanation": "Атомарные операции не могут быть прерваны другими потоками."
+        },
+        {
+          "id": 48,
+          "question": "Как избежать deadlock?",
+          "code": "Всегда захватывать блокировки в одном порядке",
+          "options": ["Устанавливать порядок захвата ресурсов", "Использовать таймауты", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Фиксированный порядок захвата предотвращает круговое ожидание."
+        },
+        {
+          "id": 49,
+          "question": "Что такое 'context switch'?",
+          "code": "OS переключает выполнение с одного потока на другой",
+          "options": ["Переключение между потоками ОС", "Ошибка контекста", "Замыкание"],
+          "correct": 0,
+          "explanation": "Context switch — механизм, позволяющий ОС выполнять несколько потоков на одном ядре."
+        },
+        {
+          "id": 50,
+          "question": "Как работает 'ThreadPoolExecutor'?",
+          "code": "with ThreadPoolExecutor() as executor:\n    executor.map(func, items)",
+          "options": ["Управляет пулом потоков для выполнения задач", "Создаёт один поток", "Ошибка"],
+          "correct": 0,
+          "explanation": "ThreadPoolExecutor автоматически управляет жизненным циклом потоков."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+
+    {
+      "id": 6,
+      "language": "C++",
+      "title": "Ошибки компиляции и линковки",
+      "description": "undefined reference, main missing",
+      "terms": [
+        {
+          "term": "Undefined reference",
+          "definition": "Ошибка линковки: функция объявлена, но не определена",
+          "example": "// main.c\nint main() { foo(); }\n// foo.c не скомпилирован"
+        },
+        {
+          "term": "Entry point",
+          "definition": "Точка входа программы — функция main()",
+          "example": "int main() { return 0; }"
+        },
+        {
+          "term": "Linker",
+          "definition": "Программа, объединяющая объектные файлы в исполняемый",
+          "example": "gcc -o program main.o foo.o"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 51,
+          "question": "Почему возникает ошибка 'undefined reference to main'?",
+          "code": "gcc program.c",
+          "options": ["Файл program.c не содержит функцию main()", "Компилятор не установлен", "Нужно использовать g++ вместо gcc"],
+          "correct": 0,
+          "explanation": "Каждая программа на C/C++ должна иметь точку входа — функцию main()."
+        },
+        {
+          "id": 52,
+          "question": "Что означает 'undefined reference to foo'?",
+          "code": "// main.c\nint main() { foo(); }\n// foo.c существует, но не скомпилирован вместе",
+          "options": ["Функция foo() объявлена, но не определена в линковке", "Синтаксическая ошибка в вызове", "Нужно подключить заголовочный файл"],
+          "correct": 0,
+          "explanation": "Это ошибка линковщика: он не может найти реализацию функции foo."
+        },
+        {
+          "id": 53,
+          "question": "Как исправить ошибку 'multiple definition of main'?",
+          "code": "// file1.c и file2.c оба содержат int main()",
+          "options": ["Оставить main() только в одном файле", "Использовать static для main()", "Удалить один из файлов"],
+          "correct": 0,
+          "explanation": "В программе может быть только одна функция main()."
+        },
+        {
+          "id": 54,
+          "question": "Почему 'fatal error: stdio.h: No such file or directory'?",
+          "code": "#include <stdio.h>",
+          "options": ["Не установлен пакет libc-dev (Linux)", "Файл stdio.h удалён", "Нужно писать #include \"stdio.h\""],
+          "correct": 0,
+          "explanation": "Заголовочные файлы стандартной библиотеки требуют установки dev-пакетов."
+        },
+        {
+          "id": 55,
+          "question": "Что делает флаг -c в gcc?",
+          "code": "gcc -c main.c",
+          "options": ["Компилирует в объектный файл без линковки", "Запускает программу", "Проверяет синтаксис"],
+          "correct": 0,
+          "explanation": "Флаг -c создаёт .o файл, который потом можно линковать с другими."
+        },
+        {
+          "id": 56,
+          "question": "Почему 'error: expected declaration specifiers'?",
+          "code": "int = 5;",
+          "options": ["Пропущено имя переменной", "Нельзя присваивать 5", "Нужно объявить функцию"],
+          "correct": 0,
+          "explanation": "Синтаксис объявления переменной нарушен: должно быть int x = 5;"
+        },
+        {
+          "id": 57,
+          "question": "Что означает 'warning: implicit declaration of function'?",
+          "code": "int main() { printf(\"Hello\"); }",
+          "options": ["Забыли #include <stdio.h>", "Функция printf не существует", "Нужно объявить printf как extern"],
+          "correct": 0,
+          "explanation": "Без заголовка компилятор не знает сигнатуру функции — предполагает int."
+        },
+        {
+          "id": 58,
+          "question": "Почему 'error: redefinition of 'x''?",
+          "code": "int x = 1; int x = 2;",
+          "options": ["Переменная x уже определена", "Нельзя менять значение", "Нужно использовать extern"],
+          "correct": 0,
+          "explanation": "В одной области видимости нельзя дважды определить одну и ту же переменную."
+        },
+        {
+          "id": 59,
+          "question": "Что означает 'error: ‘for’ loop initial declarations are only allowed in C99 mode'?",
+          "code": "for (int i = 0; i < 10; i++) {}",
+          "options": ["Нужно компилировать с флагом -std=c99", "Цикл for не поддерживается", "Нельзя объявлять переменные в for"],
+          "correct": 0,
+          "explanation": "В старом стандарте C переменные в for запрещены — нужен C99 или новее."
+        },
+        {
+          "id": 60,
+          "question": "Как проверить, какой стандарт C использует gcc?",
+          "code": "gcc --version",
+          "options": ["По умолчанию используется GNU89, если не указано иное", "Всегда C11", "Зависит от ОС"],
+          "correct": 0,
+          "explanation": "Без флага -std gcc использует устаревший стандарт GNU89."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": true
+    },
+    {
+      "id": 7,
+      "language": "C++",
+      "title": "Указатели и память",
+      "description": "Segmentation fault, null pointer",
+      "terms": [
+        {
+          "term": "Segmentation fault",
+          "definition": "Ошибка при обращении к недопустимой области памяти",
+          "example": "int *p = NULL; *p = 5;"
+        },
+        {
+          "term": "Dereference",
+          "definition": "Получение значения по указателю",
+          "example": "int x = 10; int *p = &x; int y = *p;"
+        },
+        {
+          "term": "Wild pointer",
+          "definition": "Неинициализированный указатель",
+          "example": "int *p; *p = 5; // ошибка"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 61,
+          "question": "Что вызывает 'Segmentation fault'?",
+          "code": "int *p = NULL;\n*p = 42;",
+          "options": ["Обращение к NULL-указателю", "Синтаксическая ошибка", "Нет библиотеки"],
+          "correct": 0,
+          "explanation": "Разыменование нулевого указателя — частая причина segfault."
+        },
+        {
+          "id": 62,
+          "question": "Что такое 'dereferencing a null pointer'?",
+          "code": "int *p = NULL;\n*p = 10;",
+          "options": ["Попытка записать значение по адресу, который не указывает ни на что", "Объявление указателя без типа", "Неверное присваивание указателю"],
+          "correct": 0,
+          "explanation": "Разыменование null-указателя приводит к неопределённому поведению."
+        },
+        {
+          "id": 63,
+          "question": "Почему возникает 'double free or corruption'?",
+          "code": "free(ptr); free(ptr);",
+          "options": ["Повторное освобождение уже освобождённой памяти", "Нельзя вызывать free() дважды", "Память не была выделена"],
+          "correct": 0,
+          "explanation": "Освобождать один и тот же блок памяти дважды — ошибка времени выполнения."
+        },
+        {
+          "id": 64,
+          "question": "Что означает 'use after free'?",
+          "code": "free(ptr); printf(\"%d\", *ptr);",
+          "options": ["Обращение к памяти после её освобождения", "Использование неинициализированного указателя", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Доступ к памяти после free() — неопределённое поведение."
+        },
+        {
+          "id": 65,
+          "question": "Как избежать утечки памяти в C?",
+          "code": "int *p = malloc(sizeof(int));",
+          "options": ["Вызвать free(p) после использования", "Использовать статические переменные", "Не использовать malloc"],
+          "correct": 0,
+          "explanation": "Каждый malloc() должен иметь соответствующий free()."
+        },
+        {
+          "id": 66,
+          "question": "Что такое 'wild pointer'?",
+          "code": "int *p; *p = 5;",
+          "options": ["Указатель, не инициализированный значением", "Указатель на массив", "NULL-указатель"],
+          "correct": 0,
+          "explanation": "Wild pointer — неинициализированный указатель, ведущий в случайную область памяти."
+        },
+        {
+          "id": 67,
+          "question": "Почему 'invalid read of size 4' в Valgrind?",
+          "code": "int arr[5]; printf(\"%d\", arr[10]);",
+          "options": ["Выход за границы массива", "Неправильный тип данных", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Чтение за пределами выделенной памяти — ошибка времени выполнения."
+        },
+        {
+          "id": 68,
+          "question": "Что делает оператор '&' в C?",
+          "code": "int x = 5; int *p = &x;",
+          "options": ["Получает адрес переменной", "Разыменовывает указатель", "Объявляет указатель"],
+          "correct": 0,
+          "explanation": "Оператор '&' возвращает адрес переменной."
+        },
+        {
+          "id": 69,
+          "question": "Что такое 'memory leak'?",
+          "code": "int *p = malloc(100); // забыли free",
+          "options": ["Память выделена, но не освобождена", "Память повреждена", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Утечка памяти — когда выделенная память не освобождается до завершения программы."
+        },
+        {
+          "id": 70,
+          "question": "Как проверить, что указатель не NULL перед использованием?",
+          "code": "if (p != NULL) { *p = 5; }",
+          "options": ["Сравнить с NULL", "Проверить длину", "Использовать try-catch"],
+          "correct": 0,
+          "explanation": "Всегда проверяйте указатель на NULL перед разыменованием."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 8,
+      "language": "C++",
+      "title": "Утечки памяти и Valgrind",
+      "description": "double free, use after free",
+      "terms": [
+        {
+          "term": "Memory leak",
+          "definition": "Память выделена, но не освобождена",
+          "example": "int *p = malloc(100); // забыли free"
+        },
+        {
+          "term": "Valgrind",
+          "definition": "Инструмент для обнаружения утечек памяти и ошибок",
+          "example": "valgrind ./program"
+        },
+        {
+          "term": "AddressSanitizer",
+          "definition": "Современный инструмент для поиска ошибок памяти",
+          "example": "gcc -fsanitize=address program.c"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 71,
+          "question": "Как Valgrind помогает найти утечки памяти?",
+          "code": "valgrind --leak-check=full ./program",
+          "options": ["Показывает незакрытые malloc()", "Исправляет код автоматически", "Ускоряет программу"],
+          "correct": 0,
+          "explanation": "Valgrind отслеживает все выделения и освобождения памяти."
+        },
+        {
+          "id": 72,
+          "question": "Что означает 'still reachable' в Valgrind?",
+          "code": "valgrind ./program",
+          "options": ["Память не освобождена, но указатель ещё жив", "Память повреждена", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Still reachable — утечка, но потенциально исправимая."
+        },
+        {
+          "id": 73,
+          "question": "Почему 'Invalid write of size 8'?",
+          "code": "int arr[5]; arr[10] = 42;",
+          "options": ["Запись за пределы массива", "Неправильный тип", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Запись в недопустимую область памяти."
+        },
+        {
+          "id": 74,
+          "question": "Как избежать 'use after free'?",
+          "code": "free(ptr); ptr = NULL;",
+          "options": ["Обнулить указатель после free()", "Не использовать free()", "Использовать delete"],
+          "correct": 0,
+          "explanation": "Обнуление указателя предотвращает случайное использование."
+        },
+        {
+          "id": 75,
+          "question": "Что такое 'heap corruption'?",
+          "code": "free(ptr); free(ptr);",
+          "options": ["Повреждение структуры кучи", "Ошибка компиляции", "Утечка памяти"],
+          "correct": 0,
+          "explanation": "Повторное освобождение нарушает внутреннюю структуру кучи."
+        },
+        {
+          "id": 76,
+          "question": "Как проверить утечки в C++ с new/delete?",
+          "code": "valgrind ./program",
+          "options": ["Valgrind работает и с new/delete", "Нужен специальный флаг", "Нельзя"],
+          "correct": 0,
+          "explanation": "Valgrind поддерживает как malloc/free, так и new/delete."
+        },
+        {
+          "id": 77,
+          "question": "Почему 'AddressSanitizer' лучше Valgrind?",
+          "code": "gcc -fsanitize=address program.c",
+          "options": ["Быстрее работает", "Точнее находит ошибки", "Оба варианта"],
+          "correct": 2,
+          "explanation": "AddressSanitizer — современный инструмент, встроенный в компилятор."
+        },
+        {
+          "id": 78,
+          "question": "Что делает 'calloc'?",
+          "code": "int *p = calloc(10, sizeof(int));",
+          "options": ["Выделяет и обнуляет память", "Освобождает память", "Копирует память"],
+          "correct": 0,
+          "explanation": "calloc выделяет память и заполняет её нулями."
+        },
+        {
+          "id": 79,
+          "question": "Почему 'realloc' опасен?",
+          "code": "ptr = realloc(ptr, new_size);",
+          "options": ["Может вернуть NULL и потерять старый указатель", "Медленный", "Не поддерживается"],
+          "correct": 0,
+          "explanation": "Если realloc вернёт NULL, оригинальный указатель будет потерян."
+        },
+        {
+          "id": 80,
+          "question": "Как правильно использовать realloc?",
+          "code": "void *tmp = realloc(ptr, new_size);\nif (tmp) ptr = tmp;",
+          "options": ["Использовать временный указатель", "Присваивать напрямую", "Не использовать"],
+          "correct": 0,
+          "explanation": "Временный указатель предотвращает утечку при ошибке."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 9,
+      "language": "C++",
+      "title": "Шаблоны и STL",
+      "description": "template, vector, iterator invalidation",
+      "terms": [
+        {
+          "term": "Template",
+          "definition": "Механизм обобщённого программирования",
+          "example": "template<typename T>\nT max(T a, T b) { return a > b ? a : b; }"
+        },
+        {
+          "term": "Iterator invalidation",
+          "definition": "Ситуация, когда итератор становится недействительным",
+          "example": "vec.push_back(x); // итераторы могут стать недействительными"
+        },
+        {
+          "term": "STL",
+          "definition": "Standard Template Library — библиотека контейнеров и алгоритмов",
+          "example": "#include <vector>\nstd::vector<int> v;"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 81,
+          "question": "Почему 'vector subscript out of range'?",
+          "code": "std::vector<int> v(5);\nstd::cout << v[10];",
+          "options": ["Индекс выходит за границы вектора", "Вектор пуст", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Доступ к элементу за пределами размера вектора."
+        },
+        {
+          "id": 82,
+          "question": "Что такое 'iterator invalidation'?",
+          "code": "auto it = vec.begin();\nvec.push_back(1); // it может стать недействительным",
+          "options": ["Итератор становится недействительным после изменения контейнера", "Ошибка компиляции", "Нет такого понятия"],
+          "correct": 0,
+          "explanation": "Изменение контейнера может сделать итераторы недействительными."
+        },
+        {
+          "id": 83,
+          "question": "Как избежать 'iterator invalidation'?",
+          "code": "for (size_t i = 0; i < vec.size(); ++i) { ... }",
+          "options": ["Использовать индексы вместо итераторов", "Не изменять контейнер", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Индексы не становятся недействительными при изменении контейнера."
+        },
+        {
+          "id": 84,
+          "question": "Что делает 'emplace_back'?",
+          "code": "vec.emplace_back(42);",
+          "options": ["Конструирует объект прямо в векторе", "Добавляет копию", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "emplace_back избегает лишнего копирования."
+        },
+        {
+          "id": 85,
+          "question": "Почему 'undefined reference to template function'?",
+          "code": "template<typename T> T add(T a, T b) { return a + b; }\n// в другом файле: add<int>(1, 2);",
+          "options": ["Шаблон не инстанцирован в единице трансляции", "Ошибка линковки", "Нужно объявить как inline"],
+          "correct": 0,
+          "explanation": "Шаблоны должны быть видны в каждом файле, где используются."
+        },
+        {
+          "id": 86,
+          "question": "Что такое 'SFINAE'?",
+          "code": "template<typename T>\nenable_if_t<is_integral_v<T>, T> foo(T x) { ... }",
+          "options": ["Substitution Failure Is Not An Error — правило разрешения перегрузок", "Ошибка компиляции", "Макрос"],
+          "correct": 0,
+          "explanation": "SFINAE позволяет отбрасывать шаблоны при неудачной подстановке."
+        },
+        {
+          "id": 87,
+          "question": "Как работает 'auto' в C++11+?",
+          "code": "auto x = 42; // x имеет тип int",
+          "options": ["Выводит тип переменной из инициализатора", "Создаёт void*", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "auto позволяет компилятору выводить тип автоматически."
+        },
+        {
+          "id": 88,
+          "question": "Почему 'narrowing conversion' в списке инициализации?",
+          "code": "int x{42.5};",
+          "options": ["Потеря точности при преобразовании double → int", "Ошибка компиляции", "Нужно использовать ()"],
+          "correct": 0,
+          "explanation": "Списки инициализации запрещают сужающие преобразования."
+        },
+        {
+          "id": 89,
+          "question": "Что такое 'move semantics'?",
+          "code": "std::vector<int> v2 = std::move(v1);",
+          "options": ["Передача ресурсов без копирования", "Копирование с ускорением", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Move semantics позволяет эффективно передавать владение ресурсами."
+        },
+        {
+          "id": 90,
+          "question": "Как избежать 'copy elision'?",
+          "code": "MyClass obj = createObject();",
+          "options": ["Нельзя — это оптимизация компилятора", "Использовать move", "Отключить оптимизацию"],
+          "correct": 0,
+          "explanation": "Copy elision — разрешённая оптимизация, отключающая копирование."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 10,
+      "language": "C++",
+      "title": "Исключения и RAII",
+      "description": "try/catch, деструкторы, умные указатели",
+      "terms": [
+        {
+          "term": "RAII",
+          "definition": "Resource Acquisition Is Initialization — идиома управления ресурсами",
+          "example": "class File { FILE* f; public: File(const char* n) { f = fopen(n, \"r\"); } ~File() { fclose(f); } };"
+        },
+        {
+          "term": "Smart pointer",
+          "definition": "Умный указатель для автоматического управления памятью",
+          "example": "std::unique_ptr<int> p = std::make_unique<int>(42);"
+        },
+        {
+          "term": "Stack unwinding",
+          "definition": "Процесс вызова деструкторов при раскрутке стека",
+          "example": "try { MyClass obj; throw 1; } catch (...) { /* obj.~MyClass() вызван */ }"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 91,
+          "question": "Что такое 'RAII'?",
+          "code": "class Lock { std::mutex& m; public: Lock(std::mutex& m_) : m(m_) { m.lock(); } ~Lock() { m.unlock(); } };",
+          "options": ["Идиома управления ресурсами через конструкторы и деструкторы", "Ошибка компиляции", "Макрос"],
+          "correct": 0,
+          "explanation": "RAII гарантирует освобождение ресурсов даже при исключениях."
+        },
+        {
+          "id": 92,
+          "question": "Почему 'std::unique_ptr' безопаснее сырого указателя?",
+          "code": "std::unique_ptr<int> p(new int(42));",
+          "options": ["Автоматически освобождает память в деструкторе", "Быстрее", "Поддерживает многопоточность"],
+          "correct": 0,
+          "explanation": "unique_ptr предотвращает утечки памяти."
+        },
+        {
+          "id": 93,
+          "question": "Что происходит при 'stack unwinding'?",
+          "code": "try { MyClass obj; throw 1; } catch (...) { }",
+          "options": ["Вызываются деструкторы локальных объектов", "Стек очищается", "Ошибка выполнения"],
+          "correct": 0,
+          "explanation": "Stack unwinding обеспечивает корректное освобождение ресурсов."
+        },
+        {
+          "id": 94,
+          "question": "Какой умный указатель использовать для совместного владения?",
+          "code": "std::shared_ptr<int> p1 = std::make_shared<int>(42);\nauto p2 = p1;",
+          "options": ["std::shared_ptr", "std::unique_ptr", "std::weak_ptr"],
+          "correct": 0,
+          "explanation": "shared_ptr подсчитывает количество владельцев."
+        },
+        {
+          "id": 95,
+          "question": "Почему 'std::make_unique' предпочтительнее new?",
+          "code": "auto p = std::make_unique<MyClass>(args);",
+          "options": ["Избегает утечек при исключениях в конструкторе", "Быстрее", "Поддерживает массивы"],
+          "correct": 0,
+          "explanation": "make_unique гарантирует безопасность исключений."
+        },
+        {
+          "id": 96,
+          "question": "Что такое 'exception safety'?",
+          "code": "void push(const T& x) { /* гарантирует, что контейнер остаётся в согласованном состоянии */ }",
+          "options": ["Гарантия, что состояние объекта остаётся согласованным при исключениях", "Отключение исключений", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Exception safety — важный принцип надёжного кода."
+        },
+        {
+          "id": 97,
+          "question": "Как отключить исключения в C++?",
+          "code": "g++ -fno-exceptions program.cpp",
+          "options": ["Компиляторный флаг -fno-exceptions", "Использовать noexcept", "Нельзя"],
+          "correct": 0,
+          "explanation": "Некоторые embedded-системы отключают исключения для экономии памяти."
+        },
+        {
+          "id": 98,
+          "question": "Что делает 'noexcept'?",
+          "code": "void foo() noexcept { }",
+          "options": ["Гарантирует, что функция не выбрасывает исключений", "Ускоряет функцию", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "noexcept помогает компилятору оптимизировать код."
+        },
+        {
+          "id": 99,
+          "question": "Почему 'terminate' вызывается при исключении в деструкторе?",
+          "code": "~MyClass() { throw 1; } // вызовет terminate",
+          "options": ["Стандарт запрещает исключения в деструкторах", "Ошибка линковки", "Нужно использовать try-catch"],
+          "correct": 0,
+          "explanation": "Исключения в деструкторах приводят к немедленному завершению программы."
+        },
+        {
+          "id": 100,
+          "question": "Как правильно обрабатывать исключения в конструкторе?",
+          "code": "MyClass() try : member(init()) { } catch (...) { /* обработка */ throw; }",
+          "options": ["Function-try-block", "Обычный try-catch", "Нельзя"],
+          "correct": 0,
+          "explanation": "Function-try-block позволяет перехватывать исключения в списке инициализации."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+
+    {
+      "id": 11,
+      "language": "Java",
+      "title": "Исключения в Java",
+      "description": "NullPointerException, ClassCastException",
+      "terms": [
+        {
+          "term": "NullPointerException",
+          "definition": "Попытка использовать объект, равный null",
+          "example": "String s = null; s.length();"
+        },
+        {
+          "term": "Checked exception",
+          "definition": "Исключение, которое должно быть обработано или объявлено",
+          "example": "throws IOException"
+        },
+        {
+          "term": "Unchecked exception",
+          "definition": "Исключение, не требующее обработки (наследник RuntimeException)",
+          "example": "NullPointerException, IllegalArgumentException"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 101,
+          "question": "Почему 'NullPointerException'?",
+          "code": "String s = null;\ns.length();",
+          "options": ["Попытка вызвать метод у ссылки, которая равна null", "Ошибка синтаксиса", "Недостаточно памяти"],
+          "correct": 0,
+          "explanation": "Эта ошибка возникает, когда вы пытаетесь использовать объект, который не был инициализирован (null)."
+        },
+        {
+          "id": 102,
+          "question": "Что такое 'checked exception'?",
+          "code": "public void readFile() throws IOException { ... }",
+          "options": ["Исключение, которое компилятор требует обработать", "Ошибка времени выполнения", "Синтаксическая ошибка"],
+          "correct": 0,
+          "explanation": "Checked exceptions (например, IOException) должны быть либо пойманы, либо объявлены в сигнатуре метода."
+        },
+        {
+          "id": 103,
+          "question": "Как поймать исключение в Java?",
+          "code": "try { risky(); } catch (Exception e) { ... }",
+          "options": ["Использовать try-catch", "Использовать if-else", "Нельзя"],
+          "correct": 0,
+          "explanation": "Блок try-catch используется для обработки исключений."
+        },
+        {
+          "id": 104,
+          "question": "Что такое 'finally' в Java?",
+          "code": "try { ... } finally { cleanup(); }",
+          "options": ["Блок, выполняющийся всегда", "Альтернатива catch", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "finally выполняется независимо от того, было ли исключение."
+        },
+        {
+          "id": 105,
+          "question": "Почему 'ClassCastException'?",
+          "code": "Object obj = \"hello\";\nInteger i = (Integer) obj;",
+          "options": ["Попытка привести объект к несовместимому типу", "Ошибка компиляции", "Нет наследования"],
+          "correct": 0,
+          "explanation": "ClassCastException возникает при неправильном приведении типов."
+        },
+        {
+          "id": 106,
+          "question": "Что такое 'ArithmeticException'?",
+          "code": "int x = 10 / 0;",
+          "options": ["Деление на ноль", "Переполнение", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "ArithmeticException — unchecked exception при делении на ноль."
+        },
+        {
+          "id": 107,
+          "question": "Как выбросить исключение в Java?",
+          "code": "throw new IllegalArgumentException(\"Invalid arg\");",
+          "options": ["Использовать throw", "Использовать raise", "Использовать error()"],
+          "correct": 0,
+          "explanation": "Ключевое слово throw используется для генерации исключений."
+        },
+        {
+          "id": 108,
+          "question": "Что такое 'unchecked exception'?",
+          "code": "NullPointerException, ArrayIndexOutOfBoundsException",
+          "options": ["Исключение, не требующее обработки", "Ошибка компиляции", "Системная ошибка"],
+          "correct": 0,
+          "explanation": "Unchecked exceptions (наследники RuntimeException) не проверяются компилятором."
+        },
+        {
+          "id": 109,
+          "question": "Почему 'ArrayIndexOutOfBoundsException'?",
+          "code": "int[] arr = new int[5];\nSystem.out.println(arr[10]);",
+          "options": ["Индекс выходит за границы массива", "Массив пуст", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Индексы массива в Java от 0 до length-1."
+        },
+        {
+          "id": 110,
+          "question": "Как обработать несколько исключений?",
+          "code": "catch (IOException | SQLException e) { ... }",
+          "options": ["Использовать multi-catch", "Несколько блоков catch", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Java поддерживает multi-catch и множественные catch-блоки."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": true
+    },
+    {
+      "id": 12,
+      "language": "Java",
+      "title": "Null и NullPointerException",
+      "description": "Безопасная работа с null",
+      "terms": [
+        {
+          "term": "Optional",
+          "definition": "Контейнер для предотвращения NullPointerException",
+          "example": "Optional<String> opt = Optional.ofNullable(str);"
+        },
+        {
+          "term": "Null-safe",
+          "definition": "Код, устойчивый к null-значениям",
+          "example": "if (obj != null) obj.method();"
+        },
+        {
+          "term": "@NonNull",
+          "definition": "Аннотация для статического анализа",
+          "example": "public void process(@NonNull String s) { ... }"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 111,
+          "question": "Как избежать NullPointerException?",
+          "code": "if (obj != null) obj.method();",
+          "options": ["Проверять на null", "Использовать try-catch", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Проверка на null — основной способ предотвращения NPE."
+        },
+        {
+          "id": 112,
+          "question": "Что такое Optional в Java 8+?",
+          "code": "Optional<String> opt = Optional.ofNullable(str);",
+          "options": ["Контейнер для безопасной работы с null", "Новый тип исключения", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Optional помогает избежать явных проверок на null."
+        },
+        {
+          "id": 113,
+          "question": "Как использовать Optional?",
+          "code": "opt.ifPresent(System.out::println);",
+          "options": ["ifPresent, orElse, map", "Только if", "Нельзя"],
+          "correct": 0,
+          "explanation": "Optional предоставляет функциональные методы для работы с возможным null."
+        },
+        {
+          "id": 114,
+          "question": "Почему 'Objects.requireNonNull'?",
+          "code": "Objects.requireNonNull(obj, \"obj must not be null\");",
+          "options": ["Явно проверить на null и выбросить исключение", "Автоматически заменить null", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Этот метод используется для валидации параметров методов."
+        },
+        {
+          "id": 115,
+          "question": "Что такое 'defensive copy'?",
+          "code": "this.list = new ArrayList<>(list);",
+          "options": ["Защитное копирование для предотвращения изменений", "Оптимизация памяти", "Ошибка"],
+          "correct": 0,
+          "explanation": "Defensive copy предотвращает внешние изменения внутреннего состояния."
+        },
+        {
+          "id": 116,
+          "question": "Как аннотации @Nullable/@NonNull помогают?",
+          "code": "public void process(@NonNull String s) { ... }",
+          "options": ["Статический анализ кода предупреждает о null", "Автоматически заменяют null", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Аннотации помогают IDE и анализаторам находить потенциальные NPE."
+        },
+        {
+          "id": 117,
+          "question": "Почему 'null' — ошибка проектирования?",
+          "code": "// Tony Hoare: 'I call it my billion-dollar mistake'",
+          "options": ["Ведёт к неочевидным ошибкам", "Замедляет программу", "Не поддерживается"],
+          "correct": 0,
+          "explanation": "Tony Hoare, изобретатель null, назвал это своей «миллиардной ошибкой»."
+        },
+        {
+          "id": 118,
+          "question": "Какой метод безопаснее: get() или orElse()?",
+          "code": "opt.orElse(\"default\");",
+          "options": ["orElse() — не выбрасывает исключение", "get() — быстрее", "Оба одинаковы"],
+          "correct": 0,
+          "explanation": "get() выбрасывает NoSuchElementException, если значение отсутствует."
+        },
+        {
+          "id": 119,
+          "question": "Что делает 'Optional.empty()'?",
+          "code": "Optional<String> empty = Optional.empty();",
+          "options": ["Создаёт пустой Optional", "Выбрасывает исключение", "Возвращает null"],
+          "correct": 0,
+          "explanation": "empty() — фабричный метод для создания пустого Optional."
+        },
+        {
+          "id": 120,
+          "question": "Можно ли использовать Optional в полях класса?",
+          "code": "private Optional<String> name;", 
+          "options": ["Нет, это нарушает сериализацию и усложняет API", "Да, всегда", "Только в статических полях"],
+          "correct": 0,
+          "explanation": "Optional предназначен для возврата из методов, а не для хранения."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 13,
+      "language": "Java",
+      "title": "Коллекции и ConcurrentModification",
+      "description": "ConcurrentModificationException, fail-fast",
+      "terms": [
+        {
+          "term": "ConcurrentModificationException",
+          "definition": "Ошибка при модификации коллекции во время итерации",
+          "example": "for (Item item : list) { list.remove(item); }"
+        },
+        {
+          "term": "Fail-fast iterator",
+          "definition": "Итератор, который немедленно выбрасывает исключение при модификации",
+          "example": "ArrayList.iterator()"
+        },
+        {
+          "term": "CopyOnWriteArrayList",
+          "definition": "Потокобезопасный список с копированием при записи",
+          "example": "List<String> list = new CopyOnWriteArrayList<>();"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 121,
+          "question": "Почему 'ConcurrentModificationException'?",
+          "code": "for (String s : list) { list.remove(s); }",
+          "options": ["Изменение коллекции во время итерации", "Ошибка памяти", "Нет прав"],
+          "correct": 0,
+          "explanation": "Нельзя модифицировать коллекцию во время итерации без итератора."
+        },
+        {
+          "id": 122,
+          "question": "Как безопасно удалить элементы из списка?",
+          "code": "Iterator<String> it = list.iterator();\nwhile (it.hasNext()) {\n  if (...) it.remove();\n}",
+          "options": ["Использовать Iterator.remove()", "Создать копию списка", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Iterator.remove() — единственный безопасный способ модификации во время итерации."
+        },
+        {
+          "id": 123,
+          "question": "Что такое 'fail-fast' итератор?",
+          "code": "ArrayList, HashMap — fail-fast",
+          "options": ["Выбрасывает исключение при модификации", "Игнорирует изменения", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Fail-fast итераторы защищают от неочевидных ошибок."
+        },
+        {
+          "id": 124,
+          "question": "Какие коллекции thread-safe?",
+          "code": "Collections.synchronizedList(list);",
+          "options": ["Collections.synchronized*, ConcurrentHashMap", "ArrayList, HashMap", "Все коллекции"],
+          "correct": 0,
+          "explanation": "Обычные коллекции не потокобезопасны; нужны специальные обёртки или классы."
+        },
+        {
+          "id": 125,
+          "question": "Почему 'CopyOnWriteArrayList' безопасен?",
+          "code": "List<String> list = new CopyOnWriteArrayList<>();",
+          "options": ["При модификации создаётся новая копия", "Блокирует потоки", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "CopyOnWriteArrayList создаёт новую копию при каждом изменении — дорого, но безопасно."
+        },
+        {
+          "id": 126,
+          "question": "Что такое 'modCount' в ArrayList?",
+          "code": "// внутренний счётчик модификаций",
+          "options": ["Счётчик изменений для fail-fast", "Размер списка", "Хэш-код"],
+          "correct": 0,
+          "explanation": "modCount используется итератором для обнаружения модификаций."
+        },
+        {
+          "id": 127,
+          "question": "Можно ли модифицировать коллекцию из другого потока?",
+          "code": "// поток A итерируется, поток B удаляет",
+          "options": ["Нет, это приведёт к ConcurrentModificationException или повреждению данных", "Да, всегда", "Только для списков"],
+          "correct": 0,
+          "explanation": "Без синхронизации — нет гарантий корректности."
+        },
+        {
+          "id": 128,
+          "question": "Как избежать ConcurrentModificationException в многопоточке?",
+          "code": "synchronized (list) { ... }",
+          "options": ["Синхронизация или использование concurrent коллекций", "Игнорировать исключение", "Нельзя"],
+          "correct": 0,
+          "explanation": "Синхронизация или ConcurrentHashMap решают проблему."
+        },
+        {
+          "id": 129,
+          "question": "Что делает 'removeIf' в Java 8+?",
+          "code": "list.removeIf(s -> s.isEmpty());",
+          "options": ["Безопасно удаляет элементы по условию", "Выбрасывает исключение", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "removeIf — безопасный и удобный способ фильтрации."
+        },
+        {
+          "id": 130,
+          "question": "Почему 'HashMap' не потокобезопасен?",
+          "code": "// два потока одновременно put",
+          "options": ["Может привести к бесконечному циклу в JDK < 8", "Медленный", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "В старых версиях JDK HashMap мог зациклиться при конкурентной записи."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 14,
+      "language": "Java",
+      "title": "Потоки и синхронизация",
+      "description": "synchronized, ExecutorService, deadlock",
+      "terms": [
+        {
+          "term": "Synchronized",
+          "definition": "Ключевое слово для синхронизации доступа к ресурсу",
+          "example": "public synchronized void increment() { count++; }"
+        },
+        {
+          "term": "ExecutorService",
+          "definition": "Фреймворк для управления пулом потоков",
+          "example": "ExecutorService executor = Executors.newFixedThreadPool(4);"
+        },
+        {
+          "term": "Deadlock",
+          "definition": "Взаимная блокировка потоков, ожидающих ресурсы друг друга",
+          "example": "Поток A ждёт ресурс B, Поток B ждёт ресурс A"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 131,
+          "question": "Что такое 'deadlock'?",
+          "code": "Поток A: lock1.acquire(); lock2.acquire()\nПоток B: lock2.acquire(); lock1.acquire()",
+          "options": ["Взаимная блокировка потоков", "Ошибка памяти", "Зависание"],
+          "correct": 0,
+          "explanation": "Deadlock возникает, когда потоки ожидают ресурсы, удерживаемые друг другом."
+        },
+        {
+          "id": 132,
+          "question": "Как избежать deadlock?",
+          "code": "Всегда захватывать блокировки в одном порядке",
+          "options": ["Устанавливать порядок захвата ресурсов", "Использовать таймауты", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Фиксированный порядок захвата предотвращает круговое ожидание."
+        },
+        {
+          "id": 133,
+          "question": "Что делает 'synchronized'?",
+          "code": "public synchronized void method() { ... }",
+          "options": ["Блокирует метод для других потоков", "Ускоряет метод", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "synchronized гарантирует, что только один поток может выполнять метод."
+        },
+        {
+          "id": 134,
+          "question": "Как работает 'ExecutorService'?",
+          "code": "ExecutorService executor = Executors.newFixedThreadPool(4);\nexecutor.submit(task);",
+          "options": ["Управляет пулом потоков для выполнения задач", "Создаёт один поток", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "ExecutorService автоматически управляет жизненным циклом потоков."
+        },
+        {
+          "id": 135,
+          "question": "Почему 'IllegalMonitorStateException'?",
+          "code": "lock.wait(); // без synchronized",
+          "options": ["Поток не владеет монитором", "Ошибка памяти", "Нет прав"],
+          "correct": 0,
+          "explanation": "wait()/notify() можно вызывать только из synchronized-блока."
+        },
+        {
+          "id": 136,
+          "question": "Что такое 'volatile'?",
+          "code": "private volatile boolean flag = false;",
+          "options": ["Гарантирует видимость изменений между потоками", "Делает переменную потокобезопасной", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "volatile обеспечивает, что изменения видны всем потокам, но не атомарность."
+        },
+        {
+          "id": 137,
+          "question": "Как работает 'ReentrantLock'?",
+          "code": "ReentrantLock lock = new ReentrantLock();\nlock.lock();\n// ...\nlock.unlock();",
+          "options": ["Позволяет более гибкую синхронизацию, чем synchronized", "Медленнее synchronized", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "ReentrantLock поддерживает таймауты, прерывания и справедливую блокировку."
+        },
+        {
+          "id": 138,
+          "question": "Что такое 'happens-before'?",
+          "code": "// модель памяти Java",
+          "options": ["Гарантия порядка видимости операций между потоками", "Ошибка компиляции", "Нет такого понятия"],
+          "correct": 0,
+          "explanation": "Happens-before — фундаментальная концепция модели памяти Java."
+        },
+        {
+          "id": 139,
+          "question": "Как избежать 'busy waiting'?",
+          "code": "lock.wait(); // вместо while (!ready) {}",
+          "options": ["Использовать wait()/notify()", "Использовать sleep()", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Busy waiting тратит процессорное время; wait() освобождает поток."
+        },
+        {
+          "id": 140,
+          "question": "Что такое 'thread pool'?",
+          "code": "Executors.newCachedThreadPool();",
+          "options": ["Пул повторно используемых потоков", "Один поток для всех задач", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Thread pool уменьшает накладные расходы на создание потоков."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 15,
+      "language": "Java",
+      "title": "JVM и сборка мусора",
+      "description": "OutOfMemoryError, GC overhead limit exceeded",
+      "terms": [
+        {
+          "term": "Garbage Collector (GC)",
+          "definition": "Автоматический менеджер памяти в JVM",
+          "example": "java -XX:+UseG1GC MyApp"
+        },
+        {
+          "term": "Heap memory",
+          "definition": "Область памяти для хранения объектов",
+          "example": "java -Xmx2g MyApp"
+        },
+        {
+          "term": "Metaspace",
+          "definition": "Память для метаданных классов (начиная с Java 8)",
+          "example": "java -XX:MaxMetaspaceSize=256m MyApp"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 141,
+          "question": "Почему 'OutOfMemoryError: Java heap space'?",
+          "code": "List<byte[]> list = new ArrayList<>();\nwhile (true) list.add(new byte[1024*1024]);",
+          "options": ["Закончилась память кучи", "Ошибка компиляции", "Нет прав"],
+          "correct": 0,
+          "explanation": "JVM не может выделить больше памяти в куче."
+        },
+        {
+          "id": 142,
+          "question": "Что такое 'GC overhead limit exceeded'?",
+          "code": "// много маленьких объектов, которые быстро умирают",
+          "options": ["Сборщик мусора тратит слишком много времени", "Ошибка компиляции", "Нет такого исключения"],
+          "correct": 0,
+          "explanation": "JVM тратит >98% времени на GC и восстанавливает <2% памяти."
+        },
+        {
+          "id": 143,
+          "question": "Как увеличить размер кучи?",
+          "code": "java -Xmx4g MyApp",
+          "options": ["-Xmx4g", "-Xms4g", "Оба варианта"],
+          "correct": 0,
+          "explanation": "-Xmx задаёт максимальный размер, -Xms — начальный."
+        },
+        {
+          "id": 144,
+          "question": "Что такое 'Metaspace'?",
+          "code": "java -XX:MaxMetaspaceSize=256m MyApp",
+          "options": ["Память для метаданных классов", "Память для примитивов", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Metaspace заменил PermGen в Java 8+."
+        },
+        {
+          "id": 145,
+          "question": "Почему 'OutOfMemoryError: Metaspace'?",
+          "code": "// динамическая генерация классов (например, в Spring)",
+          "options": ["Закончилась память для метаданных классов", "Ошибка компиляции", "Нет прав"],
+          "correct": 0,
+          "explanation": "Слишком много классов загружено в JVM."
+        },
+        {
+          "id": 146,
+          "question": "Какой GC использовать для больших куч?",
+          "code": "java -XX:+UseG1GC MyApp",
+          "options": ["G1GC", "Serial GC", "Parallel GC"],
+          "correct": 0,
+          "explanation": "G1GC оптимизирован для больших куч с предсказуемыми паузами."
+        },
+        {
+          "id": 147,
+          "question": "Что такое 'stop-the-world pause'?",
+          "code": "// во время GC все потоки приостанавливаются",
+          "options": ["Пауза всех потоков во время сборки мусора", "Ошибка компиляции", "Нет такого понятия"],
+          "correct": 0,
+          "explanation": "Stop-the-world — критически важный момент для производительности."
+        },
+        {
+          "id": 148,
+          "question": "Как профилировать память в Java?",
+          "code": "jvisualvm, jconsole, YourKit",
+          "options": ["Использовать профилировщики", "Читать логи GC", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Профилировщики показывают утечки и распределение памяти."
+        },
+        {
+          "id": 149,
+          "question": "Что такое 'memory leak' в Java?",
+          "code": "static Map cache = new HashMap(); // объекты никогда не удаляются",
+          "options": ["Объекты, на которые есть ссылки, но они не нужны", "Ошибка компиляции", "Нет утечек в Java"],
+          "correct": 0,
+          "explanation": "Утечка памяти в Java — это ненужные, но достижимые объекты."
+        },
+        {
+          "id": 150,
+          "question": "Как включить подробный лог GC?",
+          "code": "java -XX:+PrintGCDetails MyApp",
+          "options": ["-XX:+PrintGCDetails", "-verbose:gc", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Подробный лог помогает анализировать производительность GC."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+
+    {
+      "id": 16,
+      "language": "JavaScript",
+      "title": "ReferenceError и hoisting",
+      "description": "Переменные, области видимости",
+      "terms": [
+        {
+          "term": "Hoisting",
+          "definition": "Поднятие объявлений переменных и функций в начало области видимости",
+          "example": "console.log(x); var x = 5; // undefined"
+        },
+        {
+          "term": "Closure",
+          "definition": "Функция, запоминающая окружение, в котором была создана",
+          "example": "function outer() { let x=1; return () => x; }"
+        },
+        {
+          "term": "Temporal Dead Zone (TDZ)",
+          "definition": "Область, где переменная let/const объявлена, но не инициализирована",
+          "example": "console.log(x); let x = 5; // ReferenceError"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 151,
+          "question": "Почему 'ReferenceError: myFunction is not defined'?",
+          "code": "<script>\n  myFunction();\n</script>",
+          "options": ["Функция myFunction не объявлена", "Нельзя вызывать функции в теге <script>", "JavaScript отключён"],
+          "correct": 0,
+          "explanation": "Интерпретатор не нашёл объявления функции с таким именем."
+        },
+        {
+          "id": 152,
+          "question": "Что выводит console.log(typeof undeclaredVar)?",
+          "code": "console.log(typeof undeclaredVar);",
+          "options": ["\"undefined\"", "\"object\"", "ReferenceError"],
+          "correct": 0,
+          "explanation": "typeof безопасен: он не вызывает ошибку для необъявленных переменных."
+        },
+        {
+          "id": 153,
+          "question": "Почему 'Cannot access 'x' before initialization' с let?",
+          "code": "console.log(x); let x = 5;",
+          "options": ["let не подвержен hoisting", "x находится во временной мёртвой зоне", "Ошибка синтаксиса"],
+          "correct": 1,
+          "explanation": "Переменные let/const существуют в TDZ до их инициализации."
+        },
+        {
+          "id": 154,
+          "question": "Что такое 'closure'?",
+          "code": "function makeCounter() {\n  let count = 0;\n  return () => ++count;\n}",
+          "options": ["Функция, сохраняющая доступ к переменным внешней функции", "Ошибка памяти", "Замыкание потока"],
+          "correct": 0,
+          "explanation": "Замыкание позволяет внутренней функции использовать переменные из внешней."
+        },
+        {
+          "id": 155,
+          "question": "Почему 'this' равен undefined в стрелочной функции?",
+          "code": "const obj = {\n  name: 'test',\n  greet: () => console.log(this.name)\n};",
+          "options": ["Стрелочные функции не имеют своего this", "this всегда window", "Ошибка"],
+          "correct": 0,
+          "explanation": "Стрелочные функции захватывают this из внешнего контекста."
+        },
+        {
+          "id": 156,
+          "question": "Что делает 'use strict'?",
+          "code": "\"use strict\";\nx = 5; // ReferenceError",
+          "options": ["Запрещает неявное создание глобальных переменных", "Ускоряет код", "Включает TypeScript"],
+          "correct": 0,
+          "explanation": "В строгом режиме присваивание необъявленной переменной вызывает ошибку."
+        },
+        {
+          "id": 157,
+          "question": "Почему 'Uncaught TypeError: Cannot set property 'x' of undefined'?",
+          "code": "let obj;\nobj.x = 5;",
+          "options": ["obj равен undefined", "Нельзя создавать свойства", "Ошибка синтаксиса"],
+          "correct": 0,
+          "explanation": "Нельзя обращаться к свойствам undefined или null."
+        },
+        {
+          "id": 158,
+          "question": "Как правильно сравнить два массива?",
+          "code": "[1,2] === [1,2]",
+          "options": ["Никогда не будет true, так как это разные объекты", "Будет true", "Зависит от содержимого"],
+          "correct": 0,
+          "explanation": "Массивы сравниваются по ссылке, а не по содержимому."
+        },
+        {
+          "id": 159,
+          "question": "Что такое 'event loop'?",
+          "code": "setTimeout(() => console.log('A'), 0);\nconsole.log('B');",
+          "options": ["Механизм обработки асинхронных операций", "Ошибка цикла", "Замыкание"],
+          "correct": 0,
+          "explanation": "Event loop управляет очередью задач и микро-задач в JavaScript."
+        },
+        {
+          "id": 160,
+          "question": "Почему 'NaN === NaN' равно false?",
+          "code": "console.log(NaN === NaN);",
+          "options": ["По спецификации IEEE 754", "Ошибка JavaScript", "NaN не число"],
+          "correct": 0,
+          "explanation": "В IEEE 754 NaN не равен ничему, даже самому себе."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": true
+    },
+    {
+      "id": 17,
+      "language": "JavaScript",
+      "title": "Асинхронность и Promise",
+      "description": "Promise, async/await, callback hell",
+      "terms": [
+        {
+          "term": "Callback hell",
+          "definition": "Вложенная структура колбэков, затрудняющая чтение кода",
+          "example": "async1(() => { async2(() => { async3(() => {}) }) })"
+        },
+        {
+          "term": "Promise",
+          "definition": "Объект, представляющий результат асинхронной операции",
+          "example": "fetch(url).then(response => response.json())"
+        },
+        {
+          "term": "Microtask queue",
+          "definition": "Очередь для промисов и nextTick",
+          "example": "Promise.resolve().then(...) // выполняется до setTimeout"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 161,
+          "question": "Что такое 'callback hell'?",
+          "code": "doA(function() {\n  doB(function() {\n    doC();\n  });\n});",
+          "options": ["Слишком глубокая вложенность колбэков", "Ошибка памяти", "Замыкание"],
+          "correct": 0,
+          "explanation": "Callback hell делает код трудночитаемым и сложным для отладки."
+        },
+        {
+          "id": 162,
+          "question": "Как избежать callback hell?",
+          "code": "async function main() {\n  await doA();\n  await doB();\n  await doC();\n}",
+          "options": ["Использовать async/await", "Использовать Promise.all", "Оба варианта"],
+          "correct": 2,
+          "explanation": "async/await и Promise позволяют писать асинхронный код как синхронный."
+        },
+        {
+          "id": 163,
+          "question": "Что делает 'Promise.resolve()'?",
+          "code": "Promise.resolve(42).then(console.log);",
+          "options": ["Создаёт успешно завершённый Promise", "Запускает промис", "Ошибка"],
+          "correct": 0,
+          "explanation": "Promise.resolve(value) создаёт промис, который сразу разрешается со значением value."
+        },
+        {
+          "id": 164,
+          "question": "Как обработать ошибку в async/await?",
+          "code": "try {\n  await risky();\n} catch (e) {\n  console.error(e);\n}",
+          "options": ["Использовать try-catch", "Использовать .catch()", "Оба варианта"],
+          "correct": 2,
+          "explanation": "В async-функциях удобнее использовать try-catch."
+        },
+        {
+          "id": 165,
+          "question": "Что такое 'race condition' в асинхронном коде?",
+          "code": "let balance = 100;\nwithdraw(50); // async\nwithdraw(60); // async",
+          "options": ["Результат зависит от порядка завершения операций", "Ошибка сети", "Замыкание"],
+          "correct": 0,
+          "explanation": "Без синхронизации две асинхронные операции могут конфликтовать."
+        },
+        {
+          "id": 166,
+          "question": "Что делает 'Promise.all()'?",
+          "code": "Promise.all([p1, p2]).then(results => console.log(results));",
+          "options": ["Ждёт завершения всех промисов", "Возвращает первый завершённый", "Отменяет все"],
+          "correct": 0,
+          "explanation": "Promise.all ждёт все промисы и возвращает массив результатов."
+        },
+        {
+          "id": 167,
+          "question": "Почему 'UnhandledPromiseRejectionWarning'?",
+          "code": "Promise.reject('Error');",
+          "options": ["Нет обработчика ошибок для промиса", "Ошибка синтаксиса", "Нет интернета"],
+          "correct": 0,
+          "explanation": "Все отклонённые промисы должны быть обработаны через .catch() или await в try-catch."
+        },
+        {
+          "id": 168,
+          "question": "Что такое 'microtask queue'?",
+          "code": "Promise.resolve().then(() => console.log('A'));\nsetTimeout(() => console.log('B'), 0);",
+          "options": ["Очередь для промисов и nextTick", "Очередь для setTimeout", "Ошибка"],
+          "correct": 0,
+          "explanation": "Microtasks (промисы) выполняются до macrotasks (setTimeout)."
+        },
+        {
+          "id": 169,
+          "question": "Как отменить fetch-запрос?",
+          "code": "const controller = new AbortController();\nfetch(url, { signal: controller.signal });\ncontroller.abort();",
+          "options": ["Использовать AbortController", "Вызвать cancel()", "Нельзя"],
+          "correct": 0,
+          "explanation": "AbortController позволяет отменять fetch и другие асинхронные операции."
+        },
+        {
+          "id": 170,
+          "question": "Что возвращает async-функция?",
+          "code": "async function f() { return 42; }",
+          "options": ["Promise, разрешающийся значением", "Само значение", "undefined"],
+          "correct": 0,
+          "explanation": "Любая async-функция возвращает Promise."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 18,
+      "language": "JavaScript",
+      "title": "CORS и сетевые ошибки",
+      "description": "Fetch, CORS, HTTP-статусы",
+      "terms": [
+        {
+          "term": "CORS",
+          "definition": "Cross-Origin Resource Sharing — механизм безопасности браузера",
+          "example": "Access to fetch blocked by CORS policy"
+        },
+        {
+          "term": "HTTP 404",
+          "definition": "Not Found — запрашиваемый ресурс не существует",
+          "example": "GET /nonexistent → 404"
+        },
+        {
+          "term": "Fetch API",
+          "definition": "Современный способ делать HTTP-запросы",
+          "example": "fetch(url).then(res => res.json())"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 171,
+          "question": "Что означает 'Connection refused'?",
+          "code": "fetch('http://localhost:8000')",
+          "options": ["Сервер не запущен на указанном порту", "Нет интернета", "Ошибка DNS"],
+          "correct": 0,
+          "explanation": "Сервер не принимает подключения на этом порту."
+        },
+        {
+          "id": 172,
+          "question": "Почему 'TimeoutError' при запросе?",
+          "code": "fetch('http://slow-server.com', { timeout: 1000 })",
+          "options": ["Сервер не ответил за отведённое время", "Нет интернета", "Ошибка DNS"],
+          "correct": 0,
+          "explanation": "Таймаут срабатывает, если сервер не отвечает дольше указанного времени."
+        },
+        {
+          "id": 173,
+          "question": "Что такое 'CORS error' в браузере?",
+          "code": "fetch('https://api.example.com/data')",
+          "options": ["Браузер блокирует запрос из-за политики безопасности", "Ошибка сервера", "Нет интернета"],
+          "correct": 0,
+          "explanation": "CORS требует, чтобы сервер разрешил запросы с другого origin."
+        },
+        {
+          "id": 174,
+          "question": "Как обработать HTTP 404 в fetch?",
+          "code": "fetch(url).then(res => {\n  if (!res.ok) throw new Error('404');\n})",
+          "options": ["Проверить res.ok", "Поймать исключение", "Оба варианта"],
+          "correct": 2,
+          "explanation": "fetch не выбрасывает исключение для 4xx/5xx — нужно проверять res.ok."
+        },
+        {
+          "id": 175,
+          "question": "Что делает 'response.json()'?",
+          "code": "fetch(url).then(res => res.json())",
+          "options": ["Парсит тело ответа как JSON", "Отправляет JSON", "Ошибка"],
+          "correct": 0,
+          "explanation": "json() возвращает Promise с распаршенным JSON."
+        },
+        {
+          "id": 176,
+          "question": "Почему 'SSL: CERTIFICATE_VERIFY_FAILED'?",
+          "code": "fetch('https://expired-cert.com')",
+          "options": ["Сертификат сайта просрочен или недоверенный", "Нет интернета", "Ошибка DNS"],
+          "correct": 0,
+          "explanation": "SSL-сертификат не прошёл проверку подлинности."
+        },
+        {
+          "id": 177,
+          "question": "Что такое 'DNS lookup failed'?",
+          "code": "fetch('http://nonexistent-domain.com')",
+          "options": ["Доменное имя не найдено в DNS", "Сервер не отвечает", "Ошибка сети"],
+          "correct": 0,
+          "explanation": "DNS не смог преобразовать имя в IP-адрес."
+        },
+        {
+          "id": 178,
+          "question": "Как отправить JSON в POST-запросе?",
+          "code": "fetch(url, { method: 'POST', body: JSON.stringify(data) })",
+          "options": ["Использовать body: JSON.stringify()", "Использовать json: data", "Оба варианта"],
+          "correct": 0,
+          "explanation": "Нужно сериализовать данные в строку и указать Content-Type."
+        },
+        {
+          "id": 179,
+          "question": "Что означает 'HTTP 500 Internal Server Error'?",
+          "code": "GET /api/crash → 500",
+          "options": ["Ошибка на стороне сервера", "Неправильный запрос", "Нет доступа"],
+          "correct": 0,
+          "explanation": "500 означает, что сервер столкнулся с непредвиденной ситуацией."
+        },
+        {
+          "id": 180,
+          "question": "Как добавить заголовок Authorization?",
+          "code": "fetch(url, { headers: { 'Authorization': 'Bearer token' } })",
+          "options": ["Через параметр headers", "Через auth", "Оба варианта"],
+          "correct": 0,
+          "explanation": "Для Bearer-токенов используется headers."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 19,
+      "language": "JavaScript",
+      "title": "DOM и события",
+      "description": "Cannot read property 'addEventListener' of null",
+      "terms": [
+        {
+          "term": "DOMContentLoaded",
+          "definition": "Событие, когда HTML-документ полностью загружен и обработан",
+          "example": "document.addEventListener('DOMContentLoaded', init);"
+        },
+        {
+          "term": "Event delegation",
+          "definition": "Паттерн обработки событий через родительский элемент",
+          "example": "document.querySelector('#list').addEventListener('click', e => { if (e.target.matches('li')) handle(e.target); });"
+        },
+        {
+          "term": "querySelector",
+          "definition": "Метод для поиска элементов по CSS-селектору",
+          "example": "const btn = document.querySelector('#myButton');"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 181,
+          "question": "Почему 'Cannot read property 'addEventListener' of null'?",
+          "code": "const btn = document.getElementById('myBtn');\nbtn.addEventListener('click', handler);",
+          "options": ["Элемент с id='myBtn' не найден в DOM", "Ошибка синтаксиса", "Нет прав"],
+          "correct": 0,
+          "explanation": "getElementById вернул null, потому что элемент ещё не загружен или не существует."
+        },
+        {
+          "id": 182,
+          "question": "Как правильно дождаться загрузки DOM?",
+          "code": "document.addEventListener('DOMContentLoaded', () => { /* инициализация */ });",
+          "options": ["Использовать событие DOMContentLoaded", "Поместить скрипт в конец body", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Это гарантирует, что все элементы DOM доступны."
+        },
+        {
+          "id": 183,
+          "question": "Что такое 'event delegation'?",
+          "code": "document.querySelector('#list').addEventListener('click', e => { if (e.target.matches('li')) console.log(e.target.textContent); });",
+          "options": ["Обработка событий дочерних элементов через родителя", "Ошибка памяти", "Замыкание"],
+          "correct": 0,
+          "explanation": "Event delegation уменьшает количество обработчиков и работает с динамическими элементами."
+        },
+        {
+          "id": 184,
+          "question": "Как найти элемент по классу?",
+          "code": "const elem = document.querySelector('.my-class');",
+          "options": ["document.querySelector('.my-class')", "document.getElementsByClassName('my-class')[0]", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Оба метода работают, но querySelector более гибкий."
+        },
+        {
+          "id": 185,
+          "question": "Почему 'Uncaught TypeError: Cannot set property 'innerHTML' of null'?",
+          "code": "document.getElementById('content').innerHTML = 'Hello';",
+          "options": ["Элемент с id='content' не существует", "Ошибка синтаксиса", "Нет прав"],
+          "correct": 0,
+          "explanation": "getElementById вернул null — элемент не найден."
+        },
+        {
+          "id": 186,
+          "question": "Как создать новый элемент?",
+          "code": "const div = document.createElement('div');",
+          "options": ["document.createElement('div')", "new Element('div')", "Ошибка"],
+          "correct": 0,
+          "explanation": "createElement — стандартный способ создания элементов."
+        },
+        {
+          "id": 187,
+          "question": "Как добавить элемент в DOM?",
+          "code": "parent.appendChild(child);",
+          "options": ["parent.appendChild(child)", "parent.add(child)", "Оба варианта"],
+          "correct": 0,
+          "explanation": "appendChild добавляет элемент в конец дочерних."
+        },
+        {
+          "id": 188,
+          "question": "Что такое 'bubbling' событий?",
+          "code": "// клик по кнопке → сначала кнопка, потом форма, потом документ",
+          "options": ["Событие всплывает от дочернего к родительскому элементу", "Ошибка памяти", "Замыкание"],
+          "correct": 0,
+          "explanation": "Bubbling позволяет обрабатывать события на разных уровнях."
+        },
+        {
+          "id": 189,
+          "question": "Как остановить всплытие события?",
+          "code": "event.stopPropagation();",
+          "options": ["event.stopPropagation()", "event.preventDefault()", "Оба варианта"],
+          "correct": 0,
+          "explanation": "stopPropagation() останавливает всплытие, preventDefault() — действие по умолчанию."
+        },
+        {
+          "id": 190,
+          "question": "Почему 'Uncaught ReferenceError: $ is not defined'?",
+          "code": "$(document).ready(...);",
+          "options": ["jQuery не подключена", "Ошибка синтаксиса", "Нет прав"],
+          "correct": 0,
+          "explanation": "$ — это jQuery; если библиотека не загружена, будет ошибка."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 20,
+      "language": "JavaScript",
+      "title": "Модули и сборщики",
+      "description": "import/export, Webpack, ESLint",
+      "terms": [
+        {
+          "term": "ES6 Modules",
+          "definition": "Стандартный способ организации кода в модули",
+          "example": "// math.js\nexport const add = (a, b) => a + b;\n// main.js\nimport { add } from './math.js';"
+        },
+        {
+          "term": "Webpack",
+          "definition": "Сборщик модулей для JavaScript",
+          "example": "webpack --mode production"
+        },
+        {
+          "term": "ESLint",
+          "definition": "Инструмент для анализа и исправления кода",
+          "example": "eslint src/*.js"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 191,
+          "question": "Как экспортировать функцию в ES6 модуле?",
+          "code": "// utils.js\nexport function helper() { ... }",
+          "options": ["export function helper() { ... }", "module.exports = helper", "Оба варианта"],
+          "correct": 0,
+          "explanation": "ES6 использует export/import; module.exports — это CommonJS (Node.js)."
+        },
+        {
+          "id": 192,
+          "question": "Как импортировать модуль?",
+          "code": "// main.js\nimport { helper } from './utils.js';",
+          "options": ["import { helper } from './utils.js';", "const helper = require('./utils.js');", "Оба варианта"],
+          "correct": 0,
+          "explanation": "В браузерах используется import; в Node.js — require (CommonJS)."
+        },
+        {
+          "id": 193,
+          "question": "Что делает Webpack?",
+          "code": "webpack --mode production",
+          "options": ["Собирает модули в один файл", "Запускает сервер", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Webpack объединяет модули, минифицирует код и оптимизирует ресурсы."
+        },
+        {
+          "id": 194,
+          "question": "Почему 'Uncaught SyntaxError: Cannot use import statement outside a module'?",
+          "code": "<script src=\"main.js\"></script>",
+          "options": ["Нужно добавить type=\"module\" в тег script", "Ошибка синтаксиса", "Нет прав"],
+          "correct": 0,
+          "explanation": "Браузер требует type=\"module\" для использования import/export."
+        },
+        {
+          "id": 195,
+          "question": "Как подключить модуль в HTML?",
+          "code": "<script type=\"module\" src=\"main.js\"></script>",
+          "options": ["<script type=\"module\" src=\"main.js\"></script>", "<script src=\"main.js\"></script>", "Оба варианта"],
+          "correct": 0,
+          "explanation": "type=\"module\" включает поддержку ES6 модулей."
+        },
+        {
+          "id": 196,
+          "question": "Что такое 'tree shaking'?",
+          "code": "// Webpack удаляет неиспользуемый код",
+          "options": ["Удаление неиспользуемого кода", "Оптимизация изображений", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Tree shaking уменьшает размер бандла, удаляя мёртвый код."
+        },
+        {
+          "id": 197,
+          "question": "Как работает ESLint?",
+          "code": "eslint src/*.js",
+          "options": ["Анализирует код на соответствие правилам", "Исправляет ошибки автоматически", "Оба варианта"],
+          "correct": 2,
+          "explanation": "ESLint находит проблемы и может автоматически их исправлять (--fix)."
+        },
+        {
+          "id": 198,
+          "question": "Почему 'Parsing error: Unexpected token import' в ESLint?",
+          "code": "import { x } from './module';",
+          "options": ["Нужно настроить parserOptions: { sourceType: 'module' }", "Ошибка синтаксиса", "Нет прав"],
+          "correct": 0,
+          "explanation": "ESLint по умолчанию не распознаёт модули; нужно настроить конфигурацию."
+        },
+        {
+          "id": 199,
+          "question": "Что такое 'Babel'?",
+          "code": "babel src --out-dir lib",
+          "options": ["Транспилятор для поддержки старых браузеров", "Сборщик модулей", "Ошибка компиляции"],
+          "correct": 0,
+          "explanation": "Babel преобразует современный JavaScript в совместимый с ES5 код."
+        },
+        {
+          "id": 200,
+          "question": "Как экспортировать по умолчанию?",
+          "code": "// utils.js\nexport default function helper() { ... }\n// main.js\nimport helper from './utils.js';",
+          "options": ["export default function helper() { ... }", "module.exports = helper", "Оба варианта"],
+          "correct": 0,
+          "explanation": "export default позволяет импортировать без фигурных скобок."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 21,
+      "language": "Git",
+      "title": "Основы Git",
+      "description": "init, add, commit, status",
+      "terms": [
+        {
+          "term": "Staging area",
+          "definition": "Промежуточная зона для подготовки коммита",
+          "example": "git add file.txt"
+        },
+        {
+          "term": "HEAD",
+          "definition": "Указатель на текущий коммит",
+          "example": "git checkout HEAD~1"
+        },
+        {
+          "term": "Working directory",
+          "definition": "Текущая рабочая директория с файлами",
+          "example": "ls -la"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 201,
+          "question": "Что означает 'fatal: not a git repository'?",
+          "code": "git status",
+          "options": ["Текущая папка не является Git-репозиторием", "Git не установлен", "Нет интернета"],
+          "correct": 0,
+          "explanation": "Эта команда работает только внутри папки, где инициализирован репозиторий."
+        },
+        {
+          "id": 202,
+          "question": "Как отменить изменения в рабочей директории?",
+          "code": "git checkout -- file.txt",
+          "options": ["Вернуть файл к состоянию последнего коммита", "Удалить файл", "Отменить коммит"],
+          "correct": 0,
+          "explanation": "Эта команда сбрасывает изменения в файле до последнего коммита."
+        },
+        {
+          "id": 203,
+          "question": "Что делает 'git reset --hard'?",
+          "code": "git reset --hard HEAD~1",
+          "options": ["Полностью удаляет последний коммит и все изменения", "Отменяет коммит, но сохраняет изменения", "Ошибка"],
+          "correct": 0,
+          "explanation": "--hard удаляет и коммит, и изменения в файлах."
+        },
+        {
+          "id": 204,
+          "question": "Почему 'git push rejected'?",
+          "code": "git push origin main",
+          "options": ["Удалённый репозиторий изменился, нужно сделать pull", "Нет прав", "Нет интернета"],
+          "correct": 0,
+          "explanation": "Если кто-то запушил изменения, тебе нужно сначала сделать pull."
+        },
+        {
+          "id": 205,
+          "question": "Как посмотреть историю коммитов?",
+          "code": "git log --oneline",
+          "options": ["git log", "git history", "git commits"],
+          "correct": 0,
+          "explanation": "git log показывает историю коммитов с хешами и сообщениями."
+        },
+        {
+          "id": 206,
+          "question": "Что такое 'detached HEAD'?",
+          "code": "git checkout abc123",
+          "options": ["Ты находишься не на ветке, а на конкретном коммите", "Ошибка Git", "Голова отсоединена"],
+          "correct": 0,
+          "explanation": "Detached HEAD — состояние, когда ты не на ветке, а на коммите."
+        },
+        {
+          "id": 207,
+          "question": "Как создать новую ветку и перейти в неё?",
+          "code": "git checkout -b new-feature",
+          "options": ["git checkout -b имя", "git branch имя", "git new branch имя"],
+          "correct": 0,
+          "explanation": "-b создаёт ветку и сразу переходит в неё."
+        },
+        {
+          "id": 208,
+          "question": "Что делает 'git stash'?",
+          "code": "git stash",
+          "options": ["Временно сохраняет незакоммиченные изменения", "Отправляет изменения в облако", "Удаляет изменения"],
+          "correct": 0,
+          "explanation": "stash позволяет спрятать изменения, чтобы переключиться на другую задачу."
+        },
+        {
+          "id": 209,
+          "question": "Как отменить последний коммит, но сохранить изменения?",
+          "code": "git reset --soft HEAD~1",
+          "options": ["--soft", "--mixed", "--hard"],
+          "correct": 0,
+          "explanation": "--soft отменяет коммит, но оставляет изменения в staging area."
+        },
+        {
+          "id": 210,
+          "question": "Почему 'Permission denied (publickey)' при git clone?",
+          "code": "git clone git@github.com:user/repo.git",
+          "options": ["Не настроен SSH-ключ", "Нет доступа к репозиторию", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Ошибка возникает, если SSH-ключ не добавлен в ssh-agent или GitHub."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": true
+    },
+    {
+      "id": 22,
+      "language": "Git",
+      "title": "Ветвление и слияние",
+      "description": "branch, merge, rebase, conflict",
+      "terms": [
+        {
+          "term": "Merge conflict",
+          "definition": "Конфликт при слиянии, когда изменения пересекаются",
+          "example": "<<<<<<< HEAD\nmy change\n=======\ntheir change\n>>>>>>> branch"
+        },
+        {
+          "term": "Fast-forward merge",
+          "definition": "Слияние без создания нового коммита",
+          "example": "git merge feature  # если нет расхождений"
+        },
+        {
+          "term": "Rebase",
+          "definition": "Перемещение коммитов на другую ветку",
+          "example": "git rebase main"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 211,
+          "question": "Что такое 'merge conflict'?",
+          "code": "<<<<<<< HEAD\nmy code\n=======\ntheir code\n>>>>>>> branch",
+          "options": ["Конфликт изменений в одних и тех же строках", "Ошибка сети", "Нет прав"],
+          "correct": 0,
+          "explanation": "Конфликт возникает, когда Git не может автоматически объединить изменения."
+        },
+        {
+          "id": 212,
+          "question": "Как разрешить конфликт?",
+          "code": "// отредактировать файл, убрать маркеры, git add, git commit",
+          "options": ["Вручную отредактировать файл и закоммитить", "Использовать --abort", "Нельзя"],
+          "correct": 0,
+          "explanation": "Конфликты разрешаются вручную — Git не может выбрать за тебя."
+        },
+        {
+          "id": 213,
+          "question": "Что такое 'fast-forward merge'?",
+          "code": "git checkout main\ngit merge feature",
+          "options": ["Слияние без нового коммита, если история линейна", "Ошибка слияния", "Новый коммит всегда создаётся"],
+          "correct": 0,
+          "explanation": "Fast-forward происходит, когда в целевой ветке нет новых коммитов."
+        },
+        {
+          "id": 214,
+          "question": "Чем 'rebase' отличается от 'merge'?",
+          "code": "git rebase main",
+          "options": ["Rebase переписывает историю, merge — нет", "Rebase медленнее", "Нет разницы"],
+          "correct": 0,
+          "explanation": "Rebase применяет коммиты поверх другой ветки, создавая линейную историю."
+        },
+        {
+          "id": 215,
+          "question": "Когда использовать rebase?",
+          "code": "// локальная ветка перед пул-реквестом",
+          "options": ["Для локальных веток перед отправкой", "Всегда", "Никогда"],
+          "correct": 0,
+          "explanation": "Rebase упрощает историю, но не следует использовать его для общих веток."
+        },
+        {
+          "id": 216,
+          "question": "Что делает 'git cherry-pick'?",
+          "code": "git cherry-pick abc123",
+          "options": ["Применяет один коммит из другой ветки", "Копирует всю ветку", "Ошибка"],
+          "correct": 0,
+          "explanation": "Cherry-pick полезен для переноса отдельных исправлений."
+        },
+        {
+          "id": 217,
+          "question": "Как отменить rebase?",
+          "code": "git reflog\n# найти хеш до rebase\ngit reset --hard old_hash",
+          "options": ["Использовать reflog и reset", "Нельзя", "git rebase --abort"],
+          "correct": 0,
+          "explanation": "Reflog хранит историю перемещений HEAD — можно вернуться назад."
+        },
+        {
+          "id": 218,
+          "question": "Что такое 'squash merge'?",
+          "code": "git merge --squash feature",
+          "options": ["Объединяет все коммиты ветки в один", "Создаёт новый коммит для каждого", "Ошибка"],
+          "correct": 0,
+          "explanation": "Squash полезен для чистой истории — все изменения в одном коммите."
+        },
+        {
+          "id": 219,
+          "question": "Как посмотреть различия между ветками?",
+          "code": "git diff main..feature",
+          "options": ["git diff ветка1..ветка2", "git log", "git status"],
+          "correct": 0,
+          "explanation": "diff показывает изменения между двумя точками истории."
+        },
+        {
+          "id": 220,
+          "question": "Почему 'Already up to date' при merge?",
+          "code": "git merge feature",
+          "options": ["Целевая ветка уже содержит все коммиты", "Ошибка сети", "Нет изменений"],
+          "correct": 0,
+          "explanation": "Это значит, что ничего делать не нужно — ветки синхронизированы."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 23,
+      "language": "Git",
+      "title": "Работа с удалённым репозиторием",
+      "description": "remote, push, pull, fork, PR",
+      "terms": [
+        {
+          "term": "Remote",
+          "definition": "Ссылка на удалённый репозиторий",
+          "example": "origin = https://github.com/user/repo.git"
+        },
+        {
+          "term": "Pull Request (PR)",
+          "definition": "Запрос на слияние изменений из ветки",
+          "example": "GitHub Pull Request"
+        },
+        {
+          "term": "Upstream",
+          "definition": "Оригинальный репозиторий, откуда сделан fork",
+          "example": "git remote add upstream https://github.com/original/repo.git"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 221,
+          "question": "Как добавить удалённый репозиторий?",
+          "code": "git remote add origin https://github.com/user/repo.git",
+          "options": ["git remote add имя url", "git add remote", "Нельзя"],
+          "correct": 0,
+          "explanation": "Команда связывает локальный репозиторий с удалённым."
+        },
+        {
+          "id": 222,
+          "question": "Что делает 'git pull'?",
+          "code": "git pull origin main",
+          "options": ["Выполняет fetch + merge", "Только скачивает изменения", "Только сливает"],
+          "correct": 0,
+          "explanation": "pull = fetch (получить изменения) + merge (слить в текущую ветку)."
+        },
+        {
+          "id": 223,
+          "question": "Чем 'fetch' отличается от 'pull'?",
+          "code": "git fetch origin",
+          "options": ["fetch только получает изменения, не сливает", "fetch медленнее", "Нет разницы"],
+          "correct": 0,
+          "explanation": "fetch безопаснее — ты видишь изменения, прежде чем сливать их."
+        },
+        {
+          "id": 224,
+          "question": "Как посмотреть список удалённых репозиториев?",
+          "code": "git remote -v",
+          "options": ["git remote -v", "git list remotes", "git status"],
+          "correct": 0,
+          "explanation": "-v показывает URL для каждого remote."
+        },
+        {
+          "id": 225,
+          "question": "Что такое 'fork' на GitHub?",
+          "code": "// кнопка Fork на репозитории",
+          "options": ["Создание личной копии репозитория", "Ветка", "Ошибка"],
+          "correct": 0,
+          "explanation": "Fork позволяет вносить изменения без доступа к оригиналу."
+        },
+        {
+          "id": 226,
+          "question": "Как создать Pull Request?",
+          "code": "// после push в свой fork — кнопка Compare & pull request",
+          "options": ["Нажать кнопку на GitHub после push", "git pull-request", "Нельзя"],
+          "correct": 0,
+          "explanation": "PR — стандартный способ предложения изменений в open-source."
+        },
+        {
+          "id": 227,
+          "question": "Что такое 'upstream'?",
+          "code": "git remote add upstream https://github.com/original/repo.git",
+          "options": ["Оригинальный репозиторий, откуда сделан fork", "Твой репозиторий", "Ошибка"],
+          "correct": 0,
+          "explanation": "Upstream используется для синхронизации с оригиналом."
+        },
+        {
+          "id": 228,
+          "question": "Как обновить fork из upstream?",
+          "code": "git fetch upstream\ngit checkout main\ngit merge upstream/main",
+          "options": ["fetch upstream и merge", "git pull upstream", "Нельзя"],
+          "correct": 0,
+          "explanation": "Это позволяет держать fork в актуальном состоянии."
+        },
+        {
+          "id": 229,
+          "question": "Почему 'non-fast-forward push rejected'?",
+          "code": "git push origin main",
+          "options": ["В удалённой ветке есть новые коммиты", "Нет прав", "Ошибка сети"],
+          "correct": 0,
+          "explanation": "Нужно сначала сделать pull, чтобы включить чужие изменения."
+        },
+        {
+          "id": 230,
+          "question": "Как принудительно запушить изменения?",
+          "code": "git push --force-with-lease origin main",
+          "options": ["--force-with-lease (безопасно)", "--force (опасно)", "Нельзя"],
+          "correct": 0,
+          "explanation": "--force-with-lease проверяет, что никто не пушнул пока ты работал."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 24,
+      "language": "Git",
+      "title": "Отмена изменений",
+      "description": "reset, revert, stash",
+      "terms": [
+        {
+          "term": "git reset",
+          "definition": "Отмена коммитов и изменений",
+          "example": "git reset --soft HEAD~1"
+        },
+        {
+          "term": "git revert",
+          "definition": "Создание нового коммита, отменяющего предыдущий",
+          "example": "git revert abc123"
+        },
+        {
+          "term": "git stash",
+          "definition": "Временное сохранение изменений",
+          "example": "git stash; git stash pop"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 231,
+          "question": "Чем 'git reset --soft' отличается от '--hard'?",
+          "code": "git reset --soft HEAD~1",
+          "options": ["--soft сохраняет изменения в staging area, --hard удаляет всё", "Нет разницы", "Ошибка"],
+          "correct": 0,
+          "explanation": "--soft полезен для изменения сообщения коммита."
+        },
+        {
+          "id": 232,
+          "question": "Когда использовать 'git revert'?",
+          "code": "git revert abc123",
+          "options": ["Когда нужно отменить коммит в общей ветке", "Только локально", "Никогда"],
+          "correct": 0,
+          "explanation": "revert безопасен для общих веток, так как создаёт новый коммит."
+        },
+        {
+          "id": 233,
+          "question": "Что делает 'git stash pop'?",
+          "code": "git stash pop",
+          "options": ["Восстанавливает последние сохранённые изменения", "Удаляет stash", "Оба варианта"],
+          "correct": 2,
+          "explanation": "pop применяет изменения и удаляет их из stash."
+        },
+        {
+          "id": 234,
+          "question": "Как посмотреть список stash?",
+          "code": "git stash list",
+          "options": ["git stash list", "git list stash", "Нельзя"],
+          "correct": 0,
+          "explanation": "list показывает все сохранённые наборы изменений."
+        },
+        {
+          "id": 235,
+          "question": "Почему 'git reset' опасен в общей ветке?",
+          "code": "git reset --hard origin/main",
+          "options": ["Он перезаписывает историю, что ломает работу других", "Медленный", "Ошибка"],
+          "correct": 0,
+          "explanation": "Reset в общей ветке приводит к несогласованности истории."
+        },
+        {
+          "id": 236,
+          "question": "Как отменить изменения только в одном файле?",
+          "code": "git checkout HEAD -- file.txt",
+          "options": ["git checkout HEAD -- file.txt", "git reset file.txt", "Оба варианта"],
+          "correct": 2,
+          "explanation": "Оба метода работают, но checkout более прямолинеен."
+        },
+        {
+          "id": 237,
+          "question": "Что такое 'reflog'?",
+          "code": "git reflog",
+          "options": ["История всех перемещений HEAD", "Лог коммитов", "Ошибка"],
+          "correct": 0,
+          "explanation": "reflog позволяет вернуться к любому предыдущему состоянию."
+        },
+        {
+          "id": 238,
+          "question": "Как восстановить удалённую ветку?",
+          "code": "git reflog\n# найти хеш последнего коммита ветки\ngit checkout -b recovered-branch <hash>",
+          "options": ["Использовать reflog", "Нельзя", "git restore"],
+          "correct": 0,
+          "explanation": "reflog хранит ссылки даже на удалённые ветки."
+        },
+        {
+          "id": 239,
+          "question": "Что делает 'git clean'?",
+          "code": "git clean -fd",
+          "options": ["Удаляет неотслеживаемые файлы", "Очищает кэш", "Ошибка"],
+          "correct": 0,
+          "explanation": "clean полезен для возврата к чистому состоянию рабочей директории."
+        },
+        {
+          "id": 240,
+          "question": "Как отменить 'git add'?",
+          "code": "git reset HEAD file.txt",
+          "options": ["git reset HEAD file.txt", "git unadd file.txt", "Оба варианта"],
+          "correct": 0,
+          "explanation": "reset убирает файл из staging area, но оставляет в рабочей директории."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    },
+    {
+      "id": 25,
+      "language": "Git",
+      "title": "Расширенные команды",
+      "description": "reflog, cherry-pick, bisect",
+      "terms": [
+        {
+          "term": "git bisect",
+          "definition": "Бинарный поиск по коммитам для нахождения бага",
+          "example": "git bisect start\ngit bisect bad\ngit bisect good v1.0"
+        },
+        {
+          "term": "git tag",
+          "definition": "Метка для важных коммитов (релизов)",
+          "example": "git tag v1.0.0"
+        },
+        {
+          "term": "git worktree",
+          "definition": "Работа с несколькими ветками одновременно",
+          "example": "git worktree add ../feature-branch feature"
+        }
+      ],
+      "tasks": [
+        {
+          "id": 241,
+          "question": "Что делает 'git bisect'?",
+          "code": "git bisect start\ngit bisect bad\ngit bisect good v1.0",
+          "options": ["Находит коммит, в котором появился баг, методом бинарного поиска", "Исправляет баг автоматически", "Ошибка"],
+          "correct": 0,
+          "explanation": "bisect помогает быстро локализовать проблему в истории."
+        },
+        {
+          "id": 242,
+          "question": "Как создать аннотированный тег?",
+          "code": "git tag -a v1.0.0 -m \"Release version 1.0.0\"",
+          "options": ["git tag -a v1.0.0 -m \"...\"", "git tag v1.0.0", "Оба варианта"],
+          "correct": 0,
+          "explanation": "Аннотированные теги содержат автора, дату и сообщение."
+        },
+        {
+          "id": 243,
+          "question": "Что такое 'git worktree'?",
+          "code": "git worktree add ../hotfix hotfix-branch",
+          "options": ["Позволяет работать с несколькими ветками одновременно", "Копирует репозиторий", "Ошибка"],
+          "correct": 0,
+          "explanation": "worktree создаёт дополнительную рабочую директорию для другой ветки."
+        },
+        {
+          "id": 244,
+          "question": "Как посмотреть граф истории коммитов?",
+          "code": "git log --graph --oneline --all",
+          "options": ["git log --graph --oneline --all", "git graph", "Нельзя"],
+          "correct": 0,
+          "explanation": "Граф показывает ветвление и слияние коммитов."
+        },
+        {
+          "id": 245,
+          "question": "Что делает 'git blame'?",
+          "code": "git blame file.txt",
+          "options": ["Показывает, кто и когда изменил каждую строку", "Винит разработчика", "Ошибка"],
+          "correct": 0,
+          "explanation": "blame полезен для понимания истории изменений."
+        },
+        {
+          "id": 246,
+          "question": "Как найти коммит по сообщению?",
+          "code": "git log --grep=\"fix login\"",
+          "options": ["git log --grep=\"...\"", "git find commit", "Нельзя"],
+          "correct": 0,
+          "explanation": "--grep ищет по сообщению коммита."
+        },
+        {
+          "id": 247,
+          "question": "Что такое 'git submodule'?",
+          "code": "git submodule add https://github.com/user/lib.git lib",
+          "options": ["Включение одного репозитория в другой как зависимость", "Копирование кода", "Ошибка"],
+          "correct": 0,
+          "explanation": "submodule позволяет управлять внешними зависимостями."
+        },
+        {
+          "id": 248,
+          "question": "Как обновить submodule?",
+          "code": "git submodule update --remote",
+          "options": ["git submodule update --remote", "git pull submodule", "Нельзя"],
+          "correct": 0,
+          "explanation": "--remote обновляет submodule до последнего коммита в его ветке."
+        },
+        {
+          "id": 249,
+          "question": "Что делает 'git filter-branch'?",
+          "code": "git filter-branch --tree-filter 'rm password.txt' HEAD",
+          "options": ["Переписывает историю, удаляя файл", "Удаляет файл из текущего коммита", "Ошибка"],
+          "correct": 0,
+          "explanation": "filter-branch опасен, но мощен для очистки истории."
+        },
+        {
+          "id": 250,
+          "question": "Как безопасно переписать историю?",
+          "code": "git rebase -i HEAD~3",
+          "options": ["Использовать интерактивный rebase", "git filter-branch", "Нельзя"],
+          "correct": 0,
+          "explanation": "Интерактивный rebase позволяет редактировать, объединять и удалять коммиты."
+        }
+      ],
+      "unlock_threshold": 0.8,
+      "min_questions": 5,
+      "unlocked_by_default": false
+    }
+  ]
+}
