@@ -1,14 +1,22 @@
 import asyncio
 import json
 import logging
-import random
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
 from database import init_db, load_user_language, save_user_language, load_progress, save_progress
 
 logging.basicConfig(level=logging.INFO)
-BOT_TOKEN = "7715060788:AAF301Vg4BtYWO7SkQ4z96DJQe1TfRMCBS4"
+
+# Используем переменные окружения
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("❌ Переменная окружения BOT_TOKEN не задана!")
+
+WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
+WEBHOOK_URL = f"{os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:10000')}{WEBHOOK_PATH}"
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
@@ -48,7 +56,7 @@ def get_main_keyboard(uid):
         return get_language_keyboard()
 
     progress = load_progress(uid)
-    lang_data = progress.get(lang, {})
+    lang_data = progress.get(lang.strip(), {})
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
     completed_blocks = lang_data.get("completed_blocks", [])
 
@@ -57,6 +65,7 @@ def get_main_keyboard(uid):
         [KeyboardButton(text="🧠 Задание")]
     ]
 
+    # Кнопки появляются после первого блока
     if current_block != FIRST_BLOCK_ID[lang] or completed_blocks:
         keyboard.append([KeyboardButton(text="🔁 Повторить обучение")])
         keyboard.append([KeyboardButton(text="🧪 Повторить тест")])
@@ -300,7 +309,7 @@ async def repeat_test(message: Message):
 
 @dp.callback_query(lambda c: c.data.startswith("ans_"))
 async def handle_inline_answer(callback: CallbackQuery):
-    # 🔥 ОБЯЗАТЕЛЬНО: подтверждаем запрос СРАЗУ
+    # ОБЯЗАТЕЛЬНО: подтверждаем запрос СРАЗУ
     await callback.answer()
 
     uid = callback.from_user.id
@@ -333,6 +342,7 @@ async def handle_inline_answer(callback: CallbackQuery):
     attempt["index"] += 1
     await async_save_progress(uid, progress)
 
+    # Следующий вопрос
     if attempt["index"] < attempt["total"]:
         q_next = attempt["questions"][attempt["index"]]
         total = attempt["total"]
@@ -376,10 +386,32 @@ async def handle_inline_answer(callback: CallbackQuery):
         lang_data["current_attempt"] = None
         await async_save_progress(uid, progress)
 
-async def main():
+# WEBHOOK SETUP
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiohttp import web
+
+async def on_startup():
     init_db()
-    await dp.start_polling(bot)
+    await bot.set_webhook(WEBHOOK_URL)
+    print(f"✅ Webhook установлен: {WEBHOOK_URL}")
+
+async def on_shutdown():
+    await bot.delete_webhook()
+    await bot.session.close()
+
+async def main():
+    app = web.Application()
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
+    setup_application(app, dp, bot=bot)
+    return app
 
 if __name__ == "__main__":
-    print("✅ Бот запущен. Напишите /start в Telegram.")
-    asyncio.run(main())
+    if os.getenv("RENDER"):
+        # Render вызывает напрямую через ASGI/WSGI
+        pass
+    else:
+        # Локальный запуск (для теста)
+        import asyncio
+        asyncio.run(on_startup())
+        print("✅ Бот запущен локально (polling)")
+        dp.run_polling(bot)
