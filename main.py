@@ -127,7 +127,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_:
+        if key not in user_data:
             user_data[key] = val
     return user_data
 
