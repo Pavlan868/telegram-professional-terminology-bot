@@ -1,5 +1,5 @@
 # main.py
-# ФИНАЛЬНАЯ ВЕРСИЯ 4.2 - СБРОС ПРОГРЕССА + ПЕРВЫЙ ЗАПУСК
+# ФИНАЛЬНАЯ ВЕРСИЯ 4.3 - ВСЕ ОШИБКИ ИСПРАВЛЕНЫ
 import asyncio
 import json
 import logging
@@ -92,7 +92,8 @@ def get_progress_bar(current: int, total: int, length: int = 10) -> str:
     filled = int(length * current / total)
     return f"{'█' * filled}{'░' * (length - filled)} {int((current/total)*100)}%"
 
-def get_daily_bonus(user_ Dict) -> tuple:
+def get_daily_bonus(user_data: Dict) -> tuple:
+    """Возвращает (bonus_xp, streak_days, is_new_day)"""
     last_login = user_data.get("last_login_date")
     current_date = datetime.now().strftime("%Y-%m-%d")
     streak = user_data.get("login_streak", 0)
@@ -119,12 +120,13 @@ def get_user_lock(user_id: int) -> Lock:
 async def async_load_progress(user_id: int) -> Dict:
     return await asyncio.to_thread(load_progress, user_id)
 
-async def async_save_progress(user_id: int, progress_ dict):
+async def async_save_progress(user_id: int, progress_data: dict):
     lock = get_user_lock(user_id)
     async with lock:
         await asyncio.to_thread(save_progress, user_id, progress_data)
 
 def ensure_user_data(progress: Dict, lang: str) -> Dict:
+    """Гарантирует наличие всех ключей в данных пользователя"""
     if lang not in progress:
         progress[lang] = {
             "current_block": FIRST_BLOCK_ID.get(lang, 1),
@@ -144,7 +146,7 @@ def ensure_user_data(progress: Dict, lang: str) -> Dict:
     }
     
     for key, default_value in defaults.items():
-        if key not in user_
+        if key not in user_data:
             user_data[key] = default_value
     
     return user_data
@@ -181,11 +183,9 @@ async def cmd_start(message: Message):
         user = message.from_user
         register_user(user.id, user.username, user.first_name, user.last_name)
         
-        # Проверяем, есть ли УЖЕ ПРОЙДЕННЫЕ блоки
         lang = load_user_language(user.id)
         progress = await async_load_progress(user.id)
         
-        # Если нет языка ИЛИ нет пройденных блоков — ПЕРВЫЙ ЗАПУСК
         is_first_run = False
         if not lang:
             is_first_run = True
@@ -195,7 +195,6 @@ async def cmd_start(message: Message):
                 is_first_run = True
         
         if is_first_run:
-            # ПЕРВЫЙ ЗАПУСК — показываем выбор языка
             await message.answer(
                 f"👋 <b>Привет, {user.first_name or 'Пользователь'}!</b>\n\n"
                 f"🎓 Я помогу освоить терминологию программирования\n"
@@ -204,7 +203,6 @@ async def cmd_start(message: Message):
                 reply_markup=get_language_keyboard(), parse_mode="HTML"
             )
         else:
-            # УЖЕ ЕСТЬ ПРОГРЕСС — показываем меню
             ensure_user_data(progress, lang)
             await async_save_progress(user.id, progress)
             await show_main_menu(message, user.id, lang)
@@ -213,15 +211,13 @@ async def cmd_start(message: Message):
         logger.error(f"Error in /start: {e}", exc_info=True)
         await message.answer(f"⚠️ Ошибка: {e}")
 
-# === СБРОС ПРОГРЕССА ===
+# === RESET ===
 @dp.message(Command("reset"))
 async def cmd_reset(message: Message):
-    """Сбросить весь прогресс и начать заново"""
     try:
         user_id = message.from_user.id
         lang = load_user_language(user_id)
         
-        # Очищаем прогресс
         progress = {lang: {
             "current_block": FIRST_BLOCK_ID.get(lang, 1),
             "completed_blocks": [],
@@ -235,8 +231,7 @@ async def cmd_reset(message: Message):
         await async_save_progress(user_id, progress)
         
         await message.answer(
-            "🗑️ <b>Прогресс сброшен!</b>\n\n"
-            "Теперь выбери язык заново:",
+            "🗑️ <b>Прогресс сброшен!</b>\n\nТеперь выбери язык заново:",
             reply_markup=get_language_keyboard(), parse_mode="HTML"
         )
         
@@ -246,13 +241,11 @@ async def cmd_reset(message: Message):
         logger.error(f"Error in /reset: {e}", exc_info=True)
         await message.answer(f"⚠️ Ошибка сброса: {e}")
 
-# === СМЕНА ЯЗЫКА ===
+# === CHANGE LANG ===
 @dp.message(Command("lang"))
 async def cmd_changelang(message: Message):
-    """Сменить язык обучения"""
     await message.answer(
-        "📌 <b>Выбери новый язык:</b>\n"
-        "⚠️ Прогресс по старому языку сохранится",
+        "📌 <b>Выбери новый язык:</b>\n⚠️ Прогресс по старому языку сохранится",
         reply_markup=get_language_keyboard(), parse_mode="HTML"
     )
 
@@ -276,8 +269,7 @@ async def handle_language_selection(message: Message):
         await async_save_progress(user_id, progress)
         
         await message.answer(
-            f"✅ <b>Выбран: {selected_lang}</b>\n\n"
-            f"📚 Начни обучение или проверь знания!",
+            f"✅ <b>Выбран: {selected_lang}</b>\n\n📚 Начни обучение или проверь знания!",
             parse_mode="HTML", reply_markup=get_main_keyboard()
         )
         
@@ -844,7 +836,7 @@ async def handle_unknown(message: Message):
 
 # === RUN ===
 async def on_startup():
-    logger.info("🚀 Запуск v4.2...")
+    logger.info("🚀 Запуск v4.3...")
     init_db()
     for aid in ADMIN_IDS:
         try:
