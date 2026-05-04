@@ -1,5 +1,5 @@
 # main.py
-# ФИНАЛЬНАЯ ВЕРСИЯ - 2 столбца + достижения + геймификация
+# ФИНАЛЬНАЯ ВЕРСИЯ 5.0 - 2 СТОЛБЦА + ГЕЙМИФИКАЦИЯ + КОМАНДА /RESET ДЛЯ АДМИНА
 import asyncio
 import json
 import logging
@@ -125,7 +125,6 @@ def get_main_keyboard(uid):
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
     completed_blocks = lang_data.get("completed_blocks", [])
 
-    # ✅ 2 СТОЛБЦА
     keyboard = [
         [KeyboardButton(text="📚 Обучение"), KeyboardButton(text="🧠 Задание")],
         [KeyboardButton(text="🔄 Сменить язык"), KeyboardButton(text="🏆 Достижения")],
@@ -175,7 +174,6 @@ async def show_main_menu(message, uid, lang):
     completed = len(lang_data.get("completed_blocks", []))
     achievements_count = len(lang_data.get("achievements", []))
     
-    # Прогресс до следующего уровня
     next_level_xp = None
     for threshold, _, _ in LEVELS[1:]:
         if xp < threshold:
@@ -199,6 +197,39 @@ async def show_main_menu(message, uid, lang):
     
     await message.answer(msg, parse_mode=None, reply_markup=get_main_keyboard(uid))
 
+# === RESET (ТОЛЬКО ДЛЯ АДМИНА) ===
+@dp.message(Command("reset"))
+async def admin_reset_progress(message: Message):
+    uid = message.from_user.id
+    
+    # 🔒 Проверка прав администратора
+    if not is_admin(uid):
+        await message.answer("❌ Эта команда доступна только администратору.")
+        return
+
+    lang = load_user_language(uid)
+    if not lang:
+        await message.answer("❗ Сначала выберите язык (/start), чтобы сбросить прогресс.")
+        return
+
+    progress = load_progress(uid)
+    
+    # Сброс данных для текущего языка
+    progress[lang] = {
+        "current_block": FIRST_BLOCK_ID.get(lang, 1),
+        "completed_blocks": [],
+        "current_attempt": None,
+        "xp": 0,
+        "achievements": [],
+        "login_streak": 0,
+        "last_login_date": None
+    }
+    
+    save_progress(uid, progress)
+    
+    await message.answer("♻️ **Прогресс админа успешно сброшен!**\nТеперь вы видите бота глазами нового пользователя.", parse_mode=None)
+    await show_main_menu(message, uid, lang)
+
 # === ВЫБОР ЯЗЫКА ===
 @dp.message(lambda m: m.text in ["🐍 Python", "CppClass C++", "☕ Java", "📜 JavaScript", "🌱 Git"])
 async def handle_language_selection(message: Message):
@@ -213,7 +244,6 @@ async def handle_language_selection(message: Message):
     progress = load_progress(uid)
     user_data = ensure_user_data(progress, lang)
     
-    # Ежедневный бонус
     bonus, streak, is_new = get_daily_bonus(user_data)
     if is_new and bonus > 0:
         user_data["last_login_date"] = datetime.now().strftime("%Y-%m-%d")
