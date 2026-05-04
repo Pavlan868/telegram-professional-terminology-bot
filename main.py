@@ -1,5 +1,5 @@
 # main.py
-# Версия 10.0 - ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ (PRO CONTENT & XP BALANCE)
+# Версия 11.0 - ПОЛНОСТЬЮ ВОССТАНОВЛЕННАЯ (АДМИНКА + БОЛЬШОЙ JSON)
 import asyncio
 import json
 import logging
@@ -22,10 +22,11 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# 🔥 ЗАГРУЗКА ДАННЫХ (data.json)
+# 🔥 ЗАГРУЗКА БОЛЬШОГО data.json
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         DATA = json.load(f)
+    print(f"✅ Загружено блоков: {len(DATA.get('blocks', []))}")
 except Exception as e:
     print(f"❌ Ошибка загрузки data.json: {e}")
     DATA = {"blocks": []}
@@ -35,6 +36,7 @@ def reload_data():
     try:
         with open("data.json", "r", encoding="utf-8") as f:
             DATA = json.load(f)
+        print("✅ Данные обновлены в памяти")
     except Exception as e:
         print(f"❌ Ошибка обновления данных: {e}")
 
@@ -47,7 +49,6 @@ ACHIEVEMENTS = {
     "speed_demon": {"id": "speed_demon", "name": "⚡ Скорострел", "desc": "Блок < 2 мин", "xp": 75},
 }
 
-# 🔥 УВЕЛИЧЕНЫ ПОРОГИ УРОВНЕЙ (СЛОЖНЕЕ ПРОКАЧКА)
 LEVELS = [
     (0, "🌱 Новичок", "Только начинаешь"),
     (500, "📚 Студент", "Активно учишься"),
@@ -127,7 +128,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # ✅ Исправлено: user_ -> user_
+        if key not in user_data:
             user_data[key] = val
     return user_data
 
@@ -266,14 +267,12 @@ async def task(message: Message):
     tasks = block.get("tasks", [])
     selected = random.sample(tasks, min(5, len(tasks)))
     
-    # 🔥 ДОБАВЛЕНО: answers для подсчета XP по сложности
     new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block", "start_time": datetime.now().timestamp(), "answers": []}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
     q = selected[0]
     code = f"```\n{q['code']}\n```" if q.get("code") else ""
     
-    # Отображение сложности
     diff = q.get("difficulty", "easy")
     diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
     
@@ -350,7 +349,6 @@ async def handle_inline_answer(callback: CallbackQuery):
     q = attempt["questions"][idx]
     is_correct = (int(callback.data.split("_")[1]) - 1 == q["correct"])
     
-    # 🔥 Записываем результат ответа
     attempt["answers"].append(is_correct)
     
     if is_correct:
@@ -384,7 +382,6 @@ async def finish_quiz(message, uid, lang, attempt):
     
     old_xp = lang_data.get("xp", 0)
     
-    # 🔥 НОВАЯ СИСТЕМА XP: ЗАВИСИТ ОТ СЛОЖНОСТИ
     xp_earned = 0
     for i, q in enumerate(attempt["questions"]):
         if i < len(attempt["answers"]) and attempt["answers"][i]:
@@ -431,10 +428,14 @@ async def finish_quiz(message, uid, lang, attempt):
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
 
+# 🔥 АДМИНКА (ВОССТАНОВЛЕНА)
+
 @dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
-    if not is_admin(uid): return await message.answer("❌ Доступ запрещён")
+    if not is_admin(uid): 
+        return await message.answer("❌ Доступ запрещён")
+    
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
         [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")],
@@ -462,7 +463,7 @@ async def admin_reset(callback: CallbackQuery):
     await show_main_menu(callback.message, uid, lang)
 
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
-async def admin_stats_req(callback: CallbackQuery, state: FSMContext): # ✅ Исправлено: добавлен state
+async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await callback.message.answer("🆔 **Введите ID пользователя:**")
     await state.set_state(AdminStates.waiting_for_stats_id)
@@ -561,7 +562,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
         "correct": data["correct"],
         "explanation": message.text if message.text != "-" else "",
         "code": "",
-        "difficulty": "medium" # По умолчанию medium
+        "difficulty": "medium"
     }
     
     success = add_question_to_block(data["block_id"], new_q)
@@ -576,7 +577,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# === УДАЛЕНИЕ ВОПРОСОВ ===
+# === УДАЛЕНИЕ ВОПРОСОВ (ВОССТАНОВЛЕНО) ===
 @dp.callback_query(lambda c: c.data == "admin_del_req")
 async def admin_del_start(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -639,11 +640,8 @@ async def admin_del_id(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Удалить ещё", callback_data="admin_del_req")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# 🔥 ИСПРАВЛЕНО: Обработка неизвестных сообщений
 @dp.message(~StateFilter('*'))
 async def handle_unknown(message: Message):
-    # 🔥 StateFilter(None) гарантирует, что этот хендлер сработает ТОЛЬКО
-    # если пользователь НЕ находится ни в каком FSM-состоянии.
     lang = load_user_language(message.from_user.id)
     if lang:
         await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
