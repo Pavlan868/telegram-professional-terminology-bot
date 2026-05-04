@@ -1,5 +1,5 @@
 # main.py
-# Версия 12.0 - ФИНАЛЬНАЯ (ALL FEATURES + 30 ACHIEVEMENTS + DYNAMIC XP)
+# Версия 13.0 - ФИНАЛЬНАЯ (INSTRUCTION BUTTON + 30 ACHIEVEMENTS + ADMIN)
 import asyncio
 import json
 import logging
@@ -160,6 +160,7 @@ def ensure_user_data(progress, lang):
             user_data[key] = val
     return user_data
 
+# 🔥 МЕНЮ С КНОПКОЙ ИНСТРУКЦИИ
 def get_main_keyboard(uid):
     lang = load_user_language(uid)
     if not lang:
@@ -172,6 +173,7 @@ def get_main_keyboard(uid):
     keyboard = [
         [KeyboardButton(text="📚 Обучение"), KeyboardButton(text="🧠 Задание")],
         [KeyboardButton(text="🔄 Сменить язык"), KeyboardButton(text="🏆 Достижения")],
+        [KeyboardButton(text="📋 Инструкция")],  # 🔥 НОВАЯ КНОПКА
     ]
     if current_block != FIRST_BLOCK_ID[lang] or completed_blocks:
         keyboard.append([KeyboardButton(text="🔁 Повторить обучение"), KeyboardButton(text="🧪 Повторить тест")])
@@ -227,8 +229,21 @@ async def handle_language_selection(message: Message):
     lang_map = {"🐍 Python": "Python", "CppClass C++": "C++", "☕ Java": "Java", "📜 JavaScript": "JavaScript", "🌱 Git": "Git"}
     lang = lang_map.get(message.text)
     if not lang: return
-    save_user_language(uid, lang)
+    
+    # 🔥 Показываем подсказку при первом выборе языка
     progress = load_progress(uid)
+    if lang not in progress or not progress[lang].get("completed_blocks"):
+        await message.answer(
+            "✅ **Отличный выбор!**\n\n"
+            "📌 **Что делать дальше:**\n"
+            "1️⃣ Нажми «📚 Обучение» — изучи термины блока\n"
+            "2️⃣ Нажми «🧠 Задание» — ответь на вопросы\n"
+            "3️⃣ Повторяй материал, чтобы закрепить знания!\n\n"
+            "💡 В любой момент нажми «📋 Инструкция» для подробной справки.",
+            parse_mode=None
+        )
+    
+    save_user_language(uid, lang)
     user_data = ensure_user_data(progress, lang)
     bonus, streak, is_new = get_daily_bonus(user_data)
     
@@ -238,18 +253,6 @@ async def handle_language_selection(message: Message):
         user_data["xp"] += bonus
         await message.answer(f"🎁 **Бонус!** +{bonus} XP")
         
-    # Проверка достижений серии
-    earned = []
-    achieved_ids = [a["id"] for a in user_data.get("achievements", [])]
-    if streak >= 3 and "daily_streak_3" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_3"])
-    if streak >= 7 and "daily_streak_7" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_7"])
-    if streak >= 30 and "daily_streak_30" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_30"])
-    
-    for ach in earned:
-        if ach["id"] not in achieved_ids:
-            user_data.setdefault("achievements", []).append({"id": ach["id"], "earned_at": datetime.now().isoformat()})
-            user_data["xp"] += ach["xp"]
-            
     await async_save_progress(uid, progress)
     await show_main_menu(message, uid, lang)
 
@@ -274,6 +277,52 @@ async def learn(message: Message):
     if not block or not block.get("terms"): return await message.answer("📭 Нет терминов.")
     terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await message.answer(f"📘 **{block['title']}**\n\n{terms_text}", parse_mode=None)
+
+# 🔥 НОВЫЙ ХЕНДЛЕР ДЛЯ ИНСТРУКЦИИ
+@dp.message(lambda m: m.text == "📋 Инструкция")
+async def show_instructions(message: Message):
+    instructions = (
+        "📘 **КАК ПОЛЬЗОВАТЬСЯ БОТОМ**\n\n"
+        
+        "🔹 **Шаг 1: Выбери язык**\n"
+        "Нажми на кнопку с языком (🐍 Python, ☕ Java и т.д.), чтобы начать обучение.\n\n"
+        
+        "🔹 **Шаг 2: Изучи теорию**\n"
+        "• Нажми «📚 Обучение»\n"
+        "• Прочитай термины и примеры кода\n"
+        "• Запомни ключевые концепции перед тестом\n\n"
+        
+        "🔹 **Шаг 3: Пройди тест**\n"
+        "• Нажми «🧠 Задание»\n"
+        "• Ответь на 5 вопросов по блоку\n"
+        "• Цветные значки показывают сложность:\n"
+        "  🟢 Easy — базовые вопросы (10 XP)\n"
+        "  🟡 Medium — вопросы со звёздочкой (20 XP)\n"
+        "  🔴 Hard — сложные задачи (30 XP)\n\n"
+        
+        "🔹 **Шаг 4: Повторяй и закрепляй**\n"
+        "• После теста блок разблокируется для повторения\n"
+        "• Используй «🔁 Повторить обучение» для теории\n"
+        "• Используй «🧪 Повторить тест» для практики\n"
+        "• Чем чаще повторяешь — тем лучше запомнишь!\n\n"
+        
+        "🏆 **Система прогресса**\n"
+        "• За правильные ответы даются XP (очки опыта)\n"
+        "• Набирай XP, чтобы повышать уровень:\n"
+        "  🌱 Новичок → 📚 Студент → ⭐ Продвинутый → 🎓 Эксперт → 🏆 Мастер → 👑 Легенда\n"
+        "• Открывай достижения за особые успехи!\n\n"
+        
+        "💡 **Советы для эффективного обучения**\n"
+        "1. Не спеши — сначала изучи термины, потом отвечай на вопросы\n"
+        "2. Читай объяснения к ошибкам — это ценный опыт!\n"
+        "3. Возвращайся к сложным темам через «Повторить тест»\n"
+        "4. Собирай достижения — это мотивирует!\n"
+        "5. Меняй языки, чтобы стать настоящим полиглотом 💻\n\n"
+        
+        "❓ **Возникли вопросы?**\n"
+        "Используй кнопки меню или напиши /start, чтобы начать заново."
+    )
+    await message.answer(instructions, parse_mode=None)
 
 @dp.message(lambda m: m.text == "🏆 Достижения")
 async def show_achievements(message: Message):
