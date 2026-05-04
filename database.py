@@ -152,6 +152,31 @@ def add_question_to_block(block_id: int, question_dict: dict) -> bool:
         print(f"[ERROR] add_question_to_block: {e}")
         return False
 
+def delete_question_from_block(block_id: int, question_id: int) -> bool:
+    """Удаляет вопрос из data.json по ID"""
+    try:
+        with open("data.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        for block in data.get("blocks", []):
+            if block.get("id") == block_id:
+                tasks = block.get("tasks", [])
+                original_count = len(tasks)
+                
+                # Оставляем только те вопросы, ID которых НЕ совпадает с удаляемым
+                block["tasks"] = [q for q in tasks if q.get("id") != question_id]
+                
+                if len(block["tasks"]) < original_count:
+                    with open("data.json", "w", encoding="utf-8") as f:
+                        json.dump(data, f, ensure_ascii=False, indent=2)
+                    return True
+                else:
+                    return False # Вопрос с таким ID не найден
+        return False # Блок не найден
+    except Exception as e:
+        print(f"[ERROR] delete_question_from_block: {e}")
+        return False
+
 def get_block_by_id(block_id: int):
     try:
         with open("data.json", "r", encoding="utf-8") as f:
