@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.5 - ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ (state: FSMContext)
+# Версия 7.0 - ВОПРОСЫ В PostgreSQL
 import asyncio
 import json
 import logging
@@ -11,7 +11,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKe
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile
+from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile, get_questions_for_block, add_question_to_db
 
 logging.basicConfig(level=logging.INFO)
 
@@ -116,7 +116,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_:
+        if key not in user_data:  # 🔥 ИСПРАВЛЕНО: было "user_" без "data" и ":"
             user_data[key] = val
     return user_data
 
@@ -248,9 +248,19 @@ async def task(message: Message):
     lang_data = ensure_user_data(progress, lang)
     if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
     current_block_id = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
-    block = next((b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang), None)
-    if not block or not block.get("tasks"): return await message.answer("📭 Нет заданий.")
-    selected = random.sample(block["tasks"], min(5, len(block["tasks"])))
+    
+    # 🔥 ЧИТАЕМ ВОПРОСЫ ИЗ PostgreSQL
+    tasks = get_questions_for_block(current_block_id)
+    
+    # Если в БД нет вопросов, пробуем загрузить из JSON
+    if not tasks:
+        block = next((b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang), None)
+        if block:
+            tasks = block.get("tasks", [])
+    
+    if not tasks: return await message.answer("📭 Нет заданий.")
+    
+    selected = random.sample(tasks, min(5, len(tasks)))
     new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block", "start_time": datetime.now().timestamp()}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
@@ -296,11 +306,24 @@ async def repeat_test(message: Message):
     if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
     completed = lang_data.get("completed_blocks", [])
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
+    
+    # 🔥 ЧИТАЕМ ВОПРОСЫ ИЗ PostgreSQL
     all_questions = []
-    for block in DATA["blocks"]:
-        if block["language"] == lang and block["id"] in set(completed + [current_block]) and block.get("tasks"):
-            all_questions.extend(block["tasks"])
+    all_block_ids = set(completed + [current_block])
+    
+    for block_id in all_block_ids:
+        questions = get_questions_for_block(block_id)
+        if questions:
+            all_questions.extend(questions)
+    
+    # Если в БД нет вопросов, пробуем загрузить из JSON
+    if not all_questions:
+        for block in DATA["blocks"]:
+            if block["language"] == lang and block["id"] in all_block_ids and block.get("tasks"):
+                all_questions.extend(block["tasks"])
+    
     if not all_questions: return await message.answer("📭 Нет вопросов.")
+    
     selected = random.sample(all_questions, min(10, len(all_questions)))
     new_attempt = {"block_id": -1, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "repeat", "start_time": datetime.now().timestamp()}
     lang_data["current_attempt"] = new_attempt
@@ -420,7 +443,6 @@ async def admin_reset(callback: CallbackQuery):
     await callback.message.answer("♻️ **Прогресс сброшен!**")
     await show_main_menu(callback.message, uid, lang)
 
-# 🔥 ИСПРАВЛЕНО: добавлен параметр state: FSMContext
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
 async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -514,19 +536,21 @@ async def admin_add_correct(message: Message, state: FSMContext):
 @dp.message(AdminStates.adding_q_explanation)
 async def admin_add_finish(message: Message, state: FSMContext):
     data = await state.get_data()
-    new_q = {"id": 9999, "question": data["question"], "options": data["options"], "correct": data["correct"], "explanation": message.text if message.text != "-" else "", "code": ""}
+    new_q = {
+        "question": data["question"],
+        "options": data["options"],
+        "correct": data["correct"],
+        "explanation": message.text if message.text != "-" else "",
+        "code": ""
+    }
     
-    try:
-        with open("data.json", "r", encoding="utf-8") as f: json_data = json.load(f)
-        for block in json_data.get("blocks", []):
-            if block["id"] == data["block_id"]:
-                new_q["id"] = max((q.get("id", 0) for q in block.get("tasks", [])), default=0) + 1
-                block["tasks"].append(new_q)
-                with open("data.json", "w", encoding="utf-8") as f: json.dump(json_data, f, ensure_ascii=False, indent=2)
-                await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**")
-                break
-    except Exception as e:
-        await message.answer(f"❌ Ошибка: {e}")
+    # 🔥 СОХРАНЯЕМ В PostgreSQL
+    new_id = add_question_to_db(data["block_id"], new_q)
+    
+    if new_id:
+        await message.answer(f"✅ **Вопрос #{new_id} добавлен в блок #{data['block_id']}!**\n💾 Сохранено в базу данных.")
+    else:
+        await message.answer("❌ Ошибка при сохранении вопроса.")
     
     await state.clear()
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])

@@ -1,5 +1,5 @@
 # database.py
-# Версия: PostgreSQL (постоянное хранилище в Render)
+# Версия: PostgreSQL с вопросами
 import os
 import json
 import psycopg2
@@ -32,6 +32,19 @@ def init_db():
             user_id BIGINT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
             progress_data JSONB DEFAULT '{}',
             updated_at TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    # 🔥 ТАБЛИЦА ВОПРОСОВ
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS questions (
+            id SERIAL PRIMARY KEY,
+            block_id INTEGER NOT NULL,
+            question TEXT NOT NULL,
+            options JSONB NOT NULL,
+            correct INTEGER NOT NULL,
+            explanation TEXT,
+            code TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
         )
     """)
     conn.commit()
@@ -130,41 +143,88 @@ def get_users_by_language() -> dict:
     conn.close()
     return result
 
-# === РАБОТА С DATA.JSON (без изменений) ===
-def add_question_to_block(block_id: int, question_data: dict) -> bool:
+# === РАБОТА С ВОПРОСАМИ В PostgreSQL ===
+
+def add_question_to_db(block_id: int, question_ dict) -> int:
+    """Добавляет вопрос в базу данных. Возвращает ID нового вопроса или False."""
     try:
-        with open("data.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for block in data.get("blocks", []):
-            if block.get("id") == block_id:
-                new_id = max((q.get("id", 0) for q in block.get("tasks", [])), default=0) + 1
-                question_data["id"] = new_id
-                block.setdefault("tasks", []).append(question_data)
-                with open("data.json", "w", encoding="utf-8") as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                return True
-        return False
+        conn = _get_conn()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO questions (block_id, question, options, correct, explanation, code)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (
+            block_id,
+            question_data.get("question", ""),
+            json.dumps(question_data.get("options", []), ensure_ascii=False),
+            question_data.get("correct", 0),
+            question_data.get("explanation", ""),
+            question_data.get("code", "")
+        ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return new_id
     except Exception as e:
-        print(f"[DB ERROR] add_question: {e}")
+        print(f"[DB ERROR] add_question_to_db: {e}")
         return False
 
-def remove_question_from_block(block_id: int, question_id: int) -> bool:
+def get_questions_for_block(block_id: int) -> list:
+    """Получает все вопросы для блока из БД"""
     try:
-        with open("data.json", "r", encoding="utf-8") as f:
-            data = json.load(f)
-        for block in data.get("blocks", []):
-            if block.get("id") == block_id:
-                original_len = len(block.get("tasks", []))
-                block["tasks"] = [q for q in block.get("tasks", []) if q.get("id") != question_id]
-                if len(block["tasks"]) < original_len:
-                    with open("data.json", "w", encoding="utf-8") as f:
-                        json.dump(data, f, ensure_ascii=False, indent=2)
-                    return True
-                return False
-        return False
+        conn = _get_conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM questions WHERE block_id = %s ORDER BY id", (block_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        questions = []
+        for row in rows:
+            questions.append({
+                "id": row["id"],
+                "question": row["question"],
+                "options": row["options"],
+                "correct": row["correct"],
+                "explanation": row["explanation"],
+                "code": row["code"]
+            })
+        return questions
     except Exception as e:
-        print(f"[DB ERROR] remove_question: {e}")
-        return False
+        print(f"[DB ERROR] get_questions_for_block: {e}")
+        return []
+
+def get_all_questions() -> dict:
+    """Получает все вопросы сгруппированные по блокам"""
+    try:
+        conn = _get_conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM questions ORDER BY block_id, id")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        by_block = {}
+        for row in rows:
+            block_id = row["block_id"]
+            if block_id not in by_block:
+                by_block[block_id] = []
+            by_block[block_id].append({
+                "id": row["id"],
+                "question": row["question"],
+                "options": row["options"],
+                "correct": row["correct"],
+                "explanation": row["explanation"],
+                "code": row["code"]
+            })
+        return by_block
+    except Exception as e:
+        print(f"[DB ERROR] get_all_questions: {e}")
+        return {}
+
+# === РАБОТА С DATA.JSON (для терминов и блоков) ===
 
 def get_block_by_id(block_id: int):
     try:
