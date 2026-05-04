@@ -1,5 +1,3 @@
-# database.py
-# Версия: PostgreSQL с вопросами
 import os
 import json
 import psycopg2
@@ -34,19 +32,6 @@ def init_db():
             updated_at TIMESTAMP DEFAULT NOW()
         )
     """)
-    # 🔥 ТАБЛИЦА ВОПРОСОВ
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS questions (
-            id SERIAL PRIMARY KEY,
-            block_id INTEGER NOT NULL,
-            question TEXT NOT NULL,
-            options JSONB NOT NULL,
-            correct INTEGER NOT NULL,
-            explanation TEXT,
-            code TEXT,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -71,15 +56,6 @@ def get_user_profile(user_id: int) -> dict:
     cur.close()
     conn.close()
     return dict(row) if row else None
-
-def is_user_registered(user_id: int) -> bool:
-    conn = _get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT 1 FROM users WHERE user_id = %s", (user_id,))
-    exists = cur.fetchone() is not None
-    cur.close()
-    conn.close()
-    return exists
 
 def save_user_language(user_id: int, language: str):
     conn = _get_conn()
@@ -143,142 +119,38 @@ def get_users_by_language() -> dict:
     conn.close()
     return result
 
-# === РАБОТА С ВОПРОСАМИ В PostgreSQL ===
+# === РАБОТА С ВОПРОСАМИ (data.json) ===
 
-def add_question_to_db(block_id: int, question_dict: dict) -> int:
-    """Добавляет вопрос в базу данных. Возвращает ID нового вопроса или False."""
-    try:
-        conn = _get_conn()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO questions (block_id, question, options, correct, explanation, code)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id
-        """, (
-            block_id,
-            question_dict.get("question", ""),
-            json.dumps(question_dict.get("options", []), ensure_ascii=False),
-            question_dict.get("correct", 0),
-            question_dict.get("explanation", ""),
-            question_dict.get("code", "")
-        ))
-        new_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-        return new_id
-    except Exception as e:
-        print(f"[DB ERROR] add_question_to_db: {e}")
-        return False
-        new_id = cur.fetchone()[0]
-        conn.commit()
-        cur.close()
-        conn.close()
-        return new_id
-    except Exception as e:
-        print(f"[DB ERROR] add_question_to_db: {e}")
-        return False
-    
-def migrate_questions_from_json():
-    """Переносит все вопросы из data.json в PostgreSQL (вызывается один раз)"""
+def add_question_to_block(block_id: int, question_dict: dict) -> bool:
+    """Добавляет вопрос в data.json"""
     try:
         with open("data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         
-        conn = _get_conn()
-        cur = conn.cursor()
-        
-        # Проверяем, есть ли уже вопросы в БД
-        cur.execute("SELECT COUNT(*) FROM questions")
-        count = cur.fetchone()[0]
-        
-        if count > 0:
-            print(f"⚠️ В БД уже есть {count} вопросов. Миграция пропущена.")
-            conn.close()
-            return
-        
-        migrated = 0
         for block in data.get("blocks", []):
-            block_id = block.get("id")
-            tasks = block.get("tasks", [])
-            
-            for task in tasks:
-                cur.execute("""
-                    INSERT INTO questions (block_id, question, options, correct, explanation, code)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT DO NOTHING
-                """, (
-                    block_id,
-                    task.get("question", ""),
-                    json.dumps(task.get("options", []), ensure_ascii=False),
-                    task.get("correct", 0),
-                    task.get("explanation", ""),
-                    task.get("code", "")
-                ))
-                migrated += 1
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        print(f"✅ Миграция завершена! Перенесено {migrated} вопросов в PostgreSQL")
-        
+            if block.get("id") == block_id:
+                tasks = block.get("tasks", [])
+                new_id = max((q.get("id", 0) for q in tasks), default=0) + 1
+                
+                new_question = {
+                    "id": new_id,
+                    "question": question_dict.get("question", ""),
+                    "options": question_dict.get("options", []),
+                    "correct": question_dict.get("correct", 0),
+                    "explanation": question_dict.get("explanation", ""),
+                    "code": question_dict.get("code", "")
+                }
+                tasks.append(new_question)
+                block["tasks"] = tasks
+                
+                with open("data.json", "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                
+                return True
+        return False
     except Exception as e:
-        print(f"❌ Ошибка миграции: {e}")
-
-def get_questions_for_block(block_id: int) -> list:
-    """Получает все вопросы для блока из БД"""
-    try:
-        conn = _get_conn()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM questions WHERE block_id = %s ORDER BY id", (block_id,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        questions = []
-        for row in rows:
-            questions.append({
-                "id": row["id"],
-                "question": row["question"],
-                "options": row["options"],
-                "correct": row["correct"],
-                "explanation": row["explanation"],
-                "code": row["code"]
-            })
-        return questions
-    except Exception as e:
-        print(f"[DB ERROR] get_questions_for_block: {e}")
-        return []
-
-def get_all_questions() -> dict:
-    """Получает все вопросы сгруппированные по блокам"""
-    try:
-        conn = _get_conn()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM questions ORDER BY block_id, id")
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        by_block = {}
-        for row in rows:
-            block_id = row["block_id"]
-            if block_id not in by_block:
-                by_block[block_id] = []
-            by_block[block_id].append({
-                "id": row["id"],
-                "question": row["question"],
-                "options": row["options"],
-                "correct": row["correct"],
-                "explanation": row["explanation"],
-                "code": row["code"]
-            })
-        return by_block
-    except Exception as e:
-        print(f"[DB ERROR] get_all_questions: {e}")
-        return {}
-
-# === РАБОТА С DATA.JSON (для терминов и блоков) ===
+        print(f"[ERROR] add_question_to_block: {e}")
+        return False
 
 def get_block_by_id(block_id: int):
     try:
@@ -298,9 +170,3 @@ def get_all_blocks_by_language(language: str) -> list:
         return [b for b in data.get("blocks", []) if b.get("language") == language]
     except:
         return []
-
-def get_question_stats(block_id: int) -> dict:
-    block = get_block_by_id(block_id)
-    if not block: return {}
-    tasks = block.get("tasks", [])
-    return {"total_questions": len(tasks), "question_ids": [t.get("id") for t in tasks]}

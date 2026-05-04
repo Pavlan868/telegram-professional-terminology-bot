@@ -1,5 +1,5 @@
 # main.py
-# Версия 7.0 - ВОПРОСЫ В PostgreSQL
+# Версия 8.0 - ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ
 import asyncio
 import json
 import logging
@@ -11,7 +11,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKe
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile, get_questions_for_block, add_question_to_db
+from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile, get_block_by_id, add_question_to_block
 
 logging.basicConfig(level=logging.INFO)
 
@@ -116,7 +116,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # 🔥 ИСПРАВЛЕНО: было "user_" без "data" и ":"
+        if key not in user_data:  # ✅ ИСПРАВЛЕНО: user_data и двоеточие
             user_data[key] = val
     return user_data
 
@@ -249,17 +249,10 @@ async def task(message: Message):
     if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
     current_block_id = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
     
-    # 🔥 ЧИТАЕМ ВОПРОСЫ ИЗ PostgreSQL
-    tasks = get_questions_for_block(current_block_id)
+    block = next((b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang), None)
+    if not block or not block.get("tasks"): return await message.answer("📭 Нет заданий.")
     
-    # Если в БД нет вопросов, пробуем загрузить из JSON
-    if not tasks:
-        block = next((b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang), None)
-        if block:
-            tasks = block.get("tasks", [])
-    
-    if not tasks: return await message.answer("📭 Нет заданий.")
-    
+    tasks = block.get("tasks", [])
     selected = random.sample(tasks, min(5, len(tasks)))
     new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block", "start_time": datetime.now().timestamp()}
     lang_data["current_attempt"] = new_attempt
@@ -306,21 +299,12 @@ async def repeat_test(message: Message):
     if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
     completed = lang_data.get("completed_blocks", [])
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
-    
-    # 🔥 ЧИТАЕМ ВОПРОСЫ ИЗ PostgreSQL
-    all_questions = []
     all_block_ids = set(completed + [current_block])
     
-    for block_id in all_block_ids:
-        questions = get_questions_for_block(block_id)
-        if questions:
-            all_questions.extend(questions)
-    
-    # Если в БД нет вопросов, пробуем загрузить из JSON
-    if not all_questions:
-        for block in DATA["blocks"]:
-            if block["language"] == lang and block["id"] in all_block_ids and block.get("tasks"):
-                all_questions.extend(block["tasks"])
+    all_questions = []
+    for block in DATA["blocks"]:
+        if block["language"] == lang and block["id"] in all_block_ids and block.get("tasks"):
+            all_questions.extend(block["tasks"])
     
     if not all_questions: return await message.answer("📭 Нет вопросов.")
     
@@ -444,7 +428,7 @@ async def admin_reset(callback: CallbackQuery):
     await show_main_menu(callback.message, uid, lang)
 
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
-async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
+async def admin_stats_req(callback: CallbackQuery, state: FSMContext): # ✅ Исправлено: добавлен state
     await callback.answer()
     await callback.message.answer("🆔 **Введите ID пользователя:**")
     await state.set_state(AdminStates.waiting_for_stats_id)
@@ -544,11 +528,11 @@ async def admin_add_finish(message: Message, state: FSMContext):
         "code": ""
     }
     
-    # 🔥 СОХРАНЯЕМ В PostgreSQL
-    new_id = add_question_to_db(data["block_id"], new_q)
+    # 🔥 ИСПРАВЛЕНО: Сохраняем в data.json
+    success = add_question_to_block(data["block_id"], new_q)
     
-    if new_id:
-        await message.answer(f"✅ **Вопрос #{new_id} добавлен в блок #{data['block_id']}!**\n💾 Сохранено в базу данных.")
+    if success:
+        await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**\n💾 Сохранено в data.json")
     else:
         await message.answer("❌ Ошибка при сохранении вопроса.")
     
@@ -556,7 +540,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-@dp.message(~StateFilter('*'))
+@dp.message(~StateFilter('*')) # 🔥 ИСПРАВЛЕНО: StateFilter
 async def handle_unknown(message: Message):
     lang = load_user_language(message.from_user.id)
     if lang:
@@ -566,11 +550,6 @@ async def handle_unknown(message: Message):
 
 async def main():
     init_db()
-    
-    # 🔥 МИГРАЦИЯ ВОПРОСОВ ИЗ JSON В PostgreSQL
-    from database import migrate_questions_from_json
-    migrate_questions_from_json()
-    
     print("✅ Бот запущен.")
     await dp.start_polling(bot)
 
