@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.3 - ИСПРАВЛЕН ПЕРЕХВАТ FSM В АДМИНКЕ
+# Версия 6.4 - ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ FSM
 import asyncio
 import json
 import logging
@@ -15,7 +15,6 @@ from database import init_db, load_user_language, save_user_language, load_progr
 
 logging.basicConfig(level=logging.INFO)
 
-# === ТОКЕН ===
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("❌ BOT_TOKEN не задана!")
@@ -23,7 +22,6 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# === ДАННЫЕ ===
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         DATA = json.load(f)
@@ -34,7 +32,6 @@ except:
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
-# === ДОСТИЖЕНИЯ ===
 ACHIEVEMENTS = {
     "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "desc": "Пройти первый блок", "xp": 50},
     "perfect_block": {"id": "perfect_block", "name": "💎 Идеально!", "desc": "100% в блоке", "xp": 100},
@@ -43,7 +40,6 @@ ACHIEVEMENTS = {
     "polyglot": {"id": "polyglot", "name": "🌍 Полиглот", "desc": "3 языка", "xp": 300},
 }
 
-# === УРОВНИ ===
 LEVELS = [
     (0, "🌱 Новичок", "Только начинаешь"),
     (100, "📚 Студент", "Активно учишься"),
@@ -53,7 +49,6 @@ LEVELS = [
     (2500, "👑 Легенда", "Непревзойдённый")
 ]
 
-# === FSM ДЛЯ АДМИНА ===
 class AdminStates(StatesGroup):
     waiting_for_stats_id = State()
     adding_q_lang = State()
@@ -63,7 +58,6 @@ class AdminStates(StatesGroup):
     adding_q_correct = State()
     adding_q_explanation = State()
 
-# === ФУНКЦИИ ===
 def get_level(xp):
     current = LEVELS[0]
     for threshold, name, desc in LEVELS:
@@ -122,11 +116,10 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:
+        if key not in user_data:  # 🔥 ИСПРАВЛЕНО: было "user_" без "data" и ":"
             user_data[key] = val
     return user_data
 
-# === КЛАВИАТУРЫ ===
 def get_main_keyboard(uid):
     lang = load_user_language(uid)
     if not lang:
@@ -159,7 +152,6 @@ def get_answer_buttons():
         [InlineKeyboardButton(text="3", callback_data="ans_3")]
     ])
 
-# === START ===
 @dp.message(Command("start"))
 async def start(message: Message):
     uid = message.from_user.id
@@ -189,7 +181,6 @@ async def show_main_menu(message, uid, lang):
            f"📊 **Статистика:**\n📚 Пройдено: {completed}\n🏆 Достижений: {achievements_count}\n🔥 Серия: {lang_data.get('login_streak', 0)} дн.\n\nВыбери режим:")
     await message.answer(msg, parse_mode=None, reply_markup=get_main_keyboard(uid))
 
-# === ЯЗЫК ===
 @dp.message(lambda m: m.text in ["🐍 Python", "CppClass C++", "☕ Java", "📜 JavaScript", "🌱 Git"])
 async def handle_language_selection(message: Message):
     uid = message.from_user.id
@@ -218,7 +209,6 @@ async def change_language(message: Message):
         return
     await message.answer("📌 **Выбери язык:**", reply_markup=get_language_keyboard())
 
-# === ОБУЧЕНИЕ ===
 @dp.message(lambda m: m.text == "📚 Обучение")
 async def learn(message: Message):
     uid = message.from_user.id
@@ -231,7 +221,6 @@ async def learn(message: Message):
     terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await message.answer(f"📘 **{block['title']}**\n\n{terms_text}", parse_mode=None)
 
-# === ДОСТИЖЕНИЯ ===
 @dp.message(lambda m: m.text == "🏆 Достижения")
 async def show_achievements(message: Message):
     uid = message.from_user.id
@@ -250,7 +239,6 @@ async def show_achievements(message: Message):
         if ach_id not in earned_ids: msg += f"🔒 {ach['name']}\n"
     await message.answer(msg, parse_mode=None)
 
-# === ЗАДАНИЕ ===
 @dp.message(lambda m: m.text == "🧠 Задание")
 async def task(message: Message):
     uid = message.from_user.id
@@ -271,7 +259,6 @@ async def task(message: Message):
     text = f"❓ **Вопрос 1/{len(selected)}**\n\n{q['question']}\n\n{code}\n\n" + "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
 
-# === ПОВТОРИТЬ ОБУЧЕНИЕ ===
 @dp.message(lambda m: m.text == "🔁 Повторить обучение")
 async def repeat_learn(message: Message):
     uid = message.from_user.id
@@ -299,7 +286,6 @@ async def handle_repeat_block_selection(callback: CallbackQuery):
     terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await callback.message.answer(f"📘 **{block['title']}**\n\n{terms_text}", parse_mode=None)
 
-# === ПОВТОРИТЬ ТЕСТ ===
 @dp.message(lambda m: m.text == "🧪 Повторить тест")
 async def repeat_test(message: Message):
     uid = message.from_user.id
@@ -324,7 +310,6 @@ async def repeat_test(message: Message):
     text = f"❓ **Вопрос 1/{len(selected)}**\n\n{q['question']}\n\n{code}\n\n" + "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
 
-# === ОТВЕТЫ ===
 @dp.callback_query(lambda c: c.data.startswith("ans_"))
 async def handle_inline_answer(callback: CallbackQuery):
     await callback.answer()
@@ -406,7 +391,6 @@ async def finish_quiz(message, uid, lang, attempt):
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
 
-# === АДМИНКА ===
 @dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
@@ -547,12 +531,9 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# === НЕИЗВЕСТНЫЕ СООБЩЕНИЯ (ИСПРАВЛЕНО) ===
-@dp.message(StateFilter(None))
+# === НЕИЗВЕСТНЫЕ СООБЩЕНИЯ (ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ) ===
+@dp.message(~StateFilter('*'))  # 🔥 Игнорируем ЛЮБОЕ активное FSM-состояние
 async def handle_unknown(message: Message):
-    # 🔥 StateFilter(None) гарантирует, что этот хендлер сработает ТОЛЬКО
-    # если пользователь НЕ находится ни в каком FSM-состоянии.
-    # Таким образом, ввод ID и вопросов в админке НЕ будет перехватываться.
     lang = load_user_language(message.from_user.id)
     if lang:
         await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
