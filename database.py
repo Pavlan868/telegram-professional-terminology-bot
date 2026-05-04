@@ -145,7 +145,7 @@ def get_users_by_language() -> dict:
 
 # === РАБОТА С ВОПРОСАМИ В PostgreSQL ===
 
-def add_question_to_db(block_id: int, question_ dict) -> int:
+def add_question_to_db(block_id: int, question_dict: dict) -> int:
     """Добавляет вопрос в базу данных. Возвращает ID нового вопроса или False."""
     try:
         conn = _get_conn()
@@ -156,12 +156,20 @@ def add_question_to_db(block_id: int, question_ dict) -> int:
             RETURNING id
         """, (
             block_id,
-            question_data.get("question", ""),
-            json.dumps(question_data.get("options", []), ensure_ascii=False),
-            question_data.get("correct", 0),
-            question_data.get("explanation", ""),
-            question_data.get("code", "")
+            question_dict.get("question", ""),
+            json.dumps(question_dict.get("options", []), ensure_ascii=False),
+            question_dict.get("correct", 0),
+            question_dict.get("explanation", ""),
+            question_dict.get("code", "")
         ))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return new_id
+    except Exception as e:
+        print(f"[DB ERROR] add_question_to_db: {e}")
+        return False
         new_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
