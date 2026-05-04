@@ -1,5 +1,5 @@
 # main.py
-# Версия 8.0 - ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ
+# Версия 8.1 - ИСПРАВЛЕНИЕ: НОВЫЕ ВОПРОСЫ ПОЯВЛЯЮТСЯ СРАЗУ
 import asyncio
 import json
 import logging
@@ -22,12 +22,23 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# 🔥 ЗАГРУЗКА ДАННЫХ
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         DATA = json.load(f)
-except:
-    print("❌ data.json не найден!")
-    exit(1)
+except Exception as e:
+    print(f"❌ Ошибка загрузки data.json: {e}")
+    DATA = {"blocks": []}
+
+def reload_data():
+    """Принудительно обновляет DATA из файла на диске"""
+    global DATA
+    try:
+        with open("data.json", "r", encoding="utf-8") as f:
+            DATA = json.load(f)
+        print("✅ Данные успешно обновлены в памяти")
+    except Exception as e:
+        print(f"❌ Ошибка обновления данных: {e}")
 
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
@@ -116,7 +127,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # ✅ ИСПРАВЛЕНО: user_data и двоеточие
+        if key not in user_:
             user_data[key] = val
     return user_data
 
@@ -428,7 +439,7 @@ async def admin_reset(callback: CallbackQuery):
     await show_main_menu(callback.message, uid, lang)
 
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
-async def admin_stats_req(callback: CallbackQuery, state: FSMContext): # ✅ Исправлено: добавлен state
+async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await callback.message.answer("🆔 **Введите ID пользователя:**")
     await state.set_state(AdminStates.waiting_for_stats_id)
@@ -528,11 +539,11 @@ async def admin_add_finish(message: Message, state: FSMContext):
         "code": ""
     }
     
-    # 🔥 ИСПРАВЛЕНО: Сохраняем в data.json
     success = add_question_to_block(data["block_id"], new_q)
     
     if success:
-        await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**\n💾 Сохранено в data.json")
+        reload_data()  # 🔥 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: обновляем память бота
+        await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**\n💾 Появится в тестах сразу.")
     else:
         await message.answer("❌ Ошибка при сохранении вопроса.")
     
@@ -540,7 +551,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-@dp.message(~StateFilter('*')) # 🔥 ИСПРАВЛЕНО: StateFilter
+@dp.message(~StateFilter('*'))
 async def handle_unknown(message: Message):
     lang = load_user_language(message.from_user.id)
     if lang:
