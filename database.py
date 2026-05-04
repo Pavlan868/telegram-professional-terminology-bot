@@ -178,6 +178,52 @@ def add_question_to_db(block_id: int, question_dict: dict) -> int:
     except Exception as e:
         print(f"[DB ERROR] add_question_to_db: {e}")
         return False
+    
+def migrate_questions_from_json():
+    """Переносит все вопросы из data.json в PostgreSQL (вызывается один раз)"""
+    try:
+        with open("data.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        conn = _get_conn()
+        cur = conn.cursor()
+        
+        # Проверяем, есть ли уже вопросы в БД
+        cur.execute("SELECT COUNT(*) FROM questions")
+        count = cur.fetchone()[0]
+        
+        if count > 0:
+            print(f"⚠️ В БД уже есть {count} вопросов. Миграция пропущена.")
+            conn.close()
+            return
+        
+        migrated = 0
+        for block in data.get("blocks", []):
+            block_id = block.get("id")
+            tasks = block.get("tasks", [])
+            
+            for task in tasks:
+                cur.execute("""
+                    INSERT INTO questions (block_id, question, options, correct, explanation, code)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING
+                """, (
+                    block_id,
+                    task.get("question", ""),
+                    json.dumps(task.get("options", []), ensure_ascii=False),
+                    task.get("correct", 0),
+                    task.get("explanation", ""),
+                    task.get("code", "")
+                ))
+                migrated += 1
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"✅ Миграция завершена! Перенесено {migrated} вопросов в PostgreSQL")
+        
+    except Exception as e:
+        print(f"❌ Ошибка миграции: {e}")
 
 def get_questions_for_block(block_id: int) -> list:
     """Получает все вопросы для блока из БД"""

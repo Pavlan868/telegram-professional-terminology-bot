@@ -566,6 +566,11 @@ async def handle_unknown(message: Message):
 
 async def main():
     init_db()
+    
+    # 🔥 МИГРАЦИЯ ВОПРОСОВ ИЗ JSON В PostgreSQL
+    from database import migrate_questions_from_json
+    migrate_questions_from_json()
+    
     print("✅ Бот запущен.")
     await dp.start_polling(bot)
 
