@@ -1,42 +1,66 @@
 # main.py
-# Версия 3.2: Стабильная + Геймификация
-import asyncio, json, logging, os, random, signal, sys
+# Версия 3.4: Полностью исправленная
+import asyncio
+import json
+import logging
+import os
+import random
+import signal
+import sys
 from asyncio import Lock
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import (Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton)
+from aiogram.types import (
+    Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton,
+    InlineKeyboardMarkup, InlineKeyboardButton
+)
 
-from config import BOT_TOKEN, ADMIN_IDS, UNLOCK_THRESHOLD
-from database import (init_db, register_user, get_user_profile, save_user_language, load_user_language, 
-                      load_progress, save_progress, add_question_to_block, get_block_by_id, 
-                      get_all_blocks_by_language, get_all_users_count, get_users_by_language)
+# Импортируем config - создай файл config.py или закомментируй эти строки
+try:
+    from config import BOT_TOKEN, ADMIN_IDS, UNLOCK_THRESHOLD
+except ImportError:
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+    ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
+    UNLOCK_THRESHOLD = float(os.getenv("UNLOCK_THRESHOLD", "0.8"))
+
+from database import (
+    init_db, register_user, get_user_profile, save_user_language, load_user_language,
+    load_progress, save_progress, add_question_to_block, get_block_by_id,
+    get_all_blocks_by_language, get_all_users_count, get_users_by_language
+)
 
 # === LOGGING ===
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s",
-                    handlers=[logging.FileHandler("bot.log", encoding="utf-8"), logging.StreamHandler()])
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("bot.log", encoding="utf-8"), logging.StreamHandler()]
+)
 logger = logging.getLogger(__name__)
 
 # === INIT ===
-if not BOT_TOKEN: raise RuntimeError("❌ BOT_TOKEN не задан!")
+if not BOT_TOKEN:
+    raise RuntimeError("❌ BOT_TOKEN не задан! Проверьте config.py или переменные окружения")
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 try:
-    with open("data.json", "r", encoding="utf-8") as f: DATA = json.load(f)
-    logger.info(f"✓ Загружено {len(DATA.get('blocks', []))} блоков")
+    with open("data.json", "r", encoding="utf-8") as f:
+        DATA = json.load(f)
+    logger.info(f"✓ Загружено {len(DATA.get('blocks', []))} учебных блоков")
 except Exception as e:
-    logger.error(f"❌ Ошибка data.json: {e}")
+    logger.error(f"❌ Ошибка загрузки data.json: {e}")
     DATA = {"blocks": []}
 
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
 _user_locks: Dict[int, Lock] = {}
 
-# === GAMIFICATION: ACHIEVEMENTS & LEVELS ===
+# === GAMIFICATION: ACHIEVEMENTS ===
 ACHIEVEMENTS = {
     "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "description": "Пройти первый блок", "icon": "🎯", "xp_reward": 50, "hidden": False},
     "perfect_block": {"id": "perfect_block", "name": "💎 Идеально!", "description": "Пройти блок без ошибок", "icon": "✨", "xp_reward": 100, "hidden": False},
@@ -50,6 +74,7 @@ ACHIEVEMENTS = {
     "legend": {"id": "legend", "name": "👑 ЛЕГЕНДА", "description": "Пройти ВСЕ блоки всех языков", "icon": "🏆", "xp_reward": 1000, "hidden": True}
 }
 
+# === LEVELS ===
 LEVELS = [
     (0, "🌱 Новичок", "Только начинаешь путь"),
     (100, "📚 Студент", "Активно учишься"),
@@ -63,18 +88,23 @@ LEVELS = [
 def get_level_by_xp(xp: int) -> tuple:
     current = LEVELS[0]
     for threshold, name, desc in LEVELS:
-        if xp >= threshold: current = (threshold, name, desc)
-        else: break
+        if xp >= threshold:
+            current = (threshold, name, desc)
+        else:
+            break
     return current
 
 def get_next_level_xp(xp: int) -> Optional[int]:
     for threshold, _, _ in LEVELS[1:]:
-        if xp < threshold: return threshold
+        if xp < threshold:
+            return threshold
     return None
 
 def get_progress_bar(current: int, total: int, length: int = 10) -> str:
-    filled = int(length * current / total) if total > 0 else 0
-    percent = int((current / total) * 100) if total > 0 else 0
+    if total <= 0:
+        return f"{'░' * length} 0%"
+    filled = int(length * current / total)
+    percent = int((current / total) * 100)
     return f"{'█' * filled}{'░' * (length - filled)} {percent}%"
 
 def get_daily_bonus(user_data: Dict) -> tuple:
@@ -84,10 +114,14 @@ def get_daily_bonus(user_data: Dict) -> tuple:
     
     if last_login != current_date:
         if last_login:
-            last_date = datetime.strptime(last_login, "%Y-%m-%d")
-            days_diff = (datetime.now() - last_date).days
-            streak = streak + 1 if days_diff == 1 else 1
-        else: streak = 1
+            try:
+                last_date = datetime.strptime(last_login, "%Y-%m-%d")
+                days_diff = (datetime.now() - last_date).days
+                streak = streak + 1 if days_diff == 1 else 1
+            except:
+                streak = 1
+        else:
+            streak = 1
         return (10 * streak, streak, True)
     return (0, streak, False)
 
@@ -109,8 +143,10 @@ def check_achievements(progress: Dict, lang: str, block_id: int, score: float, t
         earned.append(ACHIEVEMENTS["polyglot"])
     
     hour = datetime.now().hour
-    if "night_owl" not in achieved_ids and hour >= 23: earned.append(ACHIEVEMENTS["night_owl"])
-    if "early_bird" not in achieved_ids and hour < 7: earned.append(ACHIEVEMENTS["early_bird"])
+    if "night_owl" not in achieved_ids and hour >= 23:
+        earned.append(ACHIEVEMENTS["night_owl"])
+    if "early_bird" not in achieved_ids and hour < 7:
+        earned.append(ACHIEVEMENTS["early_bird"])
     
     perfect_count = sum(1 for a in lang_data.get("achievements", []) if a["id"] == "perfect_block")
     if "perfectionist" not in achieved_ids and perfect_count >= 10:
@@ -123,7 +159,8 @@ def check_achievements(progress: Dict, lang: str, block_id: int, score: float, t
     
     all_blocks_ids = [b["id"] for b in DATA.get("blocks", [])]
     all_completed = []
-    for l in progress: all_completed.extend(progress[l].get("completed_blocks", []))
+    for l in progress:
+        all_completed.extend(progress[l].get("completed_blocks", []))
     if "legend" not in achieved_ids and set(all_blocks_ids).issubset(set(all_completed)):
         earned.append(ACHIEVEMENTS["legend"])
     
@@ -131,7 +168,8 @@ def check_achievements(progress: Dict, lang: str, block_id: int, score: float, t
 
 # === HELPERS ===
 def get_user_lock(user_id: int) -> Lock:
-    if user_id not in _user_locks: _user_locks[user_id] = Lock()
+    if user_id not in _user_locks:
+        _user_locks[user_id] = Lock()
     return _user_locks[user_id]
 
 async def async_load_progress(user_id: int) -> Dict:
@@ -145,11 +183,14 @@ async def async_save_progress(user_id: int, progress_data: dict):
 # === GLOBAL ERROR HANDLER ===
 @dp.errors()
 async def global_error_handler(update: types.Update, exception: Exception):
-    logger.error(f"💥 [ERROR] {exception}", exc_info=True)
+    logger.error(f"💥 [GLOBAL ERROR] {exception.__class__.__name__}: {exception}", exc_info=True)
     try:
-        if isinstance(update, types.Message): await update.answer("⚠️ Ошибка. Попробуйте /start")
-        elif isinstance(update, types.CallbackQuery): await update.answer("⚠️ Ошибка", show_alert=True)
-    except: pass
+        if isinstance(update, types.Message):
+            await update.answer("⚠️ Техническая ошибка. Попробуйте /start.")
+        elif isinstance(update, types.CallbackQuery):
+            await update.answer("⚠️ Ошибка обработки", show_alert=True)
+    except Exception as e:
+        logger.warning(f"⚠️ Не удалось отправить сообщение об ошибке: {e}")
     return True
 
 # === KEYBOARDS ===
@@ -161,7 +202,7 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
         [KeyboardButton(text="⚙️ Настройки")]], resize_keyboard=True)
 
 def get_language_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=lang)] for lang in FIRST_BLOCK_ID.keys()], 
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=lang)] for lang in FIRST_BLOCK_ID.keys()],
                                resize_keyboard=True, one_time_keyboard=True)
 
 # === START & REGISTRATION ===
@@ -175,7 +216,7 @@ async def cmd_start(message: Message):
     if not lang:
         await message.answer(
             f"👋 <b>Привет, {user.first_name or 'Пользователь'}!</b>\n\n"
-            f"🎓 Я помогу освоить профессиональную терминологию\n"
+            f"🎓 Я помогу освоить профессиональную терминологию в программировании.\n"
             f"🎮 Зарабатывай XP, получай достижения, повышай уровень!\n\n"
             f"📌 <b>Выбери язык для старта:</b>",
             reply_markup=get_language_keyboard(), parse_mode="HTML"
@@ -190,6 +231,7 @@ async def handle_language_selection(message: Message):
     save_user_language(user_id, selected_lang)
     
     progress = await async_load_progress(user_id)
+    
     if selected_lang not in progress:
         progress[selected_lang] = {
             "current_block": FIRST_BLOCK_ID[selected_lang],
@@ -202,6 +244,11 @@ async def handle_language_selection(message: Message):
         }
     
     user_data = progress[selected_lang]
+    
+    for key in ["xp", "achievements", "login_streak", "last_login_date"]:
+        if key not in user_data:
+            user_data[key] = 0 if key == "xp" else [] if key == "achievements" else 0 if key == "login_streak" else None
+    
     bonus, streak, is_new = get_daily_bonus(user_data)
     
     msg = f"✅ <b>Выбран язык: {selected_lang}</b>\n\n"
@@ -211,7 +258,7 @@ async def handle_language_selection(message: Message):
         msg += f"💎 +{bonus} XP\n\n"
         user_data["last_login_date"] = datetime.now().strftime("%Y-%m-%d")
         user_data["login_streak"] = streak
-        user_data["xp"] += bonus
+        user_data["xp"] = user_data.get("xp", 0) + bonus
     
     msg += "📚 Начни обучение или проверь знания!"
     await async_save_progress(user_id, progress)
@@ -251,7 +298,7 @@ async def show_main_menu(message: Message, user_id: int, lang: str):
     
     await message.answer(msg, parse_mode="HTML", reply_markup=get_main_keyboard())
 
-# === 📚 ОБУЧЕНИЕ (Current block only) ===
+# === 📚 ОБУЧЕНИЕ ===
 @dp.message(F.text == "📚 Обучение")
 async def handle_study_mode(message: Message):
     user_id = message.from_user.id
@@ -280,7 +327,7 @@ async def handle_study_mode(message: Message):
         parse_mode="HTML"
     )
 
-# === 🔁 ПОВТОРИТЬ ОБУЧЕНИЕ (List of completed blocks) ===
+# === 🔁 ПОВТОРИТЬ ОБУЧЕНИЕ ===
 @dp.message(F.text == "🔁 Повторить обучение")
 async def repeat_study(message: Message):
     user_id = message.from_user.id
@@ -349,7 +396,7 @@ async def back_to_repeat_list(callback: CallbackQuery):
     await callback.answer()
     await repeat_study(callback.message)
 
-# === 🧠 ЗАДАНИЕ (Quiz) ===
+# === 🧠 ЗАДАНИЕ ===
 @dp.message(F.text == "🧠 Задание")
 async def handle_quiz_mode(message: Message):
     user_id = message.from_user.id
@@ -529,7 +576,6 @@ async def retry_quiz_handler(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "back_to_study")
 async def back_to_study_handler(callback: CallbackQuery):
-    """✅ Исправлено: корректно возвращает к текущему блоку"""
     await callback.answer()
     user_id = callback.from_user.id
     lang = load_user_language(user_id)
@@ -641,8 +687,8 @@ async def show_settings(message: Message):
     await message.answer(
         "⚙️ <b>Настройки:</b>\n\n"
         "• /start — сменить язык обучения\n"
-        "• /admin — панель администратора (если есть доступ)\n\n"
-        "Разработчик: @Pavlan868",
+        "• /admin — панель администратора (если есть доступ)\n"
+        "• Напишите разработчику: @Pavlan868",
         parse_mode="HTML"
     )
 
@@ -805,7 +851,7 @@ async def handle_unknown(message: Message):
 
 # === RUN ===
 async def on_startup():
-    logger.info("🚀 Бот запускается (v3.2)...")
+    logger.info("🚀 Бот запускается (v3.4)...")
     init_db()
     logger.info("✓ База данных инициализирована")
     
