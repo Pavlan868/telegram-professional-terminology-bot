@@ -1,15 +1,18 @@
 # main.py
 # Ядро Telegram-бота: обработчики, логика обучения, админ-панель
+# Версия: 2.0 (Stable Render + Error Handling)
 
 import asyncio
 import json
 import logging
 import os
 import random
+import signal
+import sys
 from asyncio import Lock
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -18,6 +21,7 @@ from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton
 )
 
+# Импорт из локальных модулей
 from config import BOT_TOKEN, ADMIN_IDS, UNLOCK_THRESHOLD, MIN_QUESTIONS_PER_BLOCK, RENDER_MODE
 from database import (
     init_db, register_user, get_user_profile, is_user_registered,
@@ -77,11 +81,15 @@ async def async_load_progress(user_id: int) -> Dict:
     return await asyncio.to_thread(load_progress, user_id)
 
 
-async def async_save_progress(user_id: int,  dict):
-    """Асинхронная обёртка с блокировкой для сохранения прогресса"""
+async def async_save_progress(user_id: int, progress_data: dict):
+    """
+    Асинхронная обёртка с блокировкой для сохранения прогресса.
+    FIX: Аргумент переименован в progress_data, чтобы избежать NameError при вызове.
+    """
     lock = get_user_lock(user_id)
     async with lock:
-        await asyncio.to_thread(save_progress, user_id, data)
+        # Явно передаём progress_data в синхронную функцию
+        await asyncio.to_thread(save_progress, user_id, progress_data)
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
@@ -106,30 +114,19 @@ def get_language_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
-def get_answer_keyboard(options_count: int) -> InlineKeyboardMarkup:
-    """Генерирует кнопки ответов для теста"""
-    buttons = [
-        [InlineKeyboardButton(text=f"{i+1}. {opt}", callback_data=f"ans_{i}")]
-        for i, opt in enumerate(options_count * [""])  # Заполняется при вызове
-    ]
-    # Пересоздаём с реальными опциями
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"{i+1}. {opt}", callback_data=f"ans_{i}")]
-        for i, opt in enumerate(options_count * ["placeholder"])
-    ])
-
-
 def get_block_navigation_keyboard(block_id: int, lang: str, can_next: bool = False) -> InlineKeyboardMarkup:
     """Клавиатура навигации по блокам"""
     buttons = []
     
-    # Кнопка "Назад к списку"
+    # Кнопка "Назад к списку" (КРИТИЧНО: должна быть всегда)
     buttons.append([InlineKeyboardButton(text="📋 К списку блоков", callback_data="blocks_list")])
     
     # Кнопка "Следующий блок" (если разблокирован)
     if can_next:
         next_id = block_id + 1
-        buttons.append([InlineKeyboardButton(text="➡️ Следующий блок", callback_data=f"block_{next_id}")])
+        # Проверяем, существует ли такой блок в базе
+        if any(b['id'] == next_id for b in DATA.get('blocks', [])):
+            buttons.append([InlineKeyboardButton(text="➡️ Следующий блок", callback_data=f"block_{next_id}")])
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -149,6 +146,36 @@ class AdminRemoveQuestion(StatesGroup):
     selecting_block = State()
     selecting_question = State()
     confirming = State()
+
+
+# === ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК (ANTI-CRASH) ===
+@dp.errors()
+async def global_error_handler(update: types.Update, exception: Exception):
+    """
+    Перехватывает ВСЕ необработанные исключения.
+    Предотвращает зависание бота и информирует пользователя.
+    """
+    logger.error(f"💥 [GLOBAL ERROR] {exception.__class__.__name__}: {exception}", exc_info=True)
+    
+    # Пытаемся ответить пользователю, чтобы он не думал, что бот сломался
+    try:
+        if isinstance(update, types.Message):
+            await update.answer(
+                "⚠️ Произошла техническая ошибка. Попробуйте снова или напишите /start.\n"
+                "💡 Бот продолжает работать."
+            )
+        elif isinstance(update, types.CallbackQuery):
+            await update.answer("⚠️ Ошибка обработки действия.", show_alert=True)
+            # Пробуем ответить в чат, если редактирование невозможно
+            try:
+                await update.message.answer("⚠️ Попробуйте нажать кнопку ещё раз.")
+            except:
+                pass
+    except Exception as e:
+        logger.warning(f"⚠️ Не удалось отправить сообщение об ошибке пользователю: {e}")
+    
+    # Возвращаем True, чтобы Dispatcher не падал и не логировал ошибку повторно
+    return True
 
 
 # === ОБРАБОТЧИКИ: РЕГИСТРАЦИЯ И СТАРТ ===
@@ -264,8 +291,12 @@ async def handle_study_mode(message: Message):
     # Формирование сообщения с теорией
     terms = block.get("terms", [])
     terms_text = "\n\n".join([
-        f"🔹 <b>{t['term']}</b>\n{i}" for i, t in enumerate(terms, 1)
+        f"🔹 <b>{t['term']}</b>\n{t.get('definition', '')}" for t in terms
     ]) if terms else "📭 В этом блоке пока нет терминов"
+    
+    # Проверка на следующий блок для кнопки навигации
+    next_id = current_block_id + 1
+    can_next = any(b['id'] == next_id for b in DATA["blocks"])
     
     await message.answer(
         f"📚 <b>{block['title']}</b>\n\n"
@@ -273,10 +304,7 @@ async def handle_study_mode(message: Message):
         f"{terms_text}\n\n"
         f"💡 Когда изучишь материал — переходи в раздел «🧠 Задание»",
         parse_mode="HTML",
-        reply_markup=get_block_navigation_keyboard(
-            current_block_id, lang, 
-            can_next=(current_block_id + 1 in [b["id"] for b in DATA["blocks"]])
-        )
+        reply_markup=get_block_navigation_keyboard(current_block_id, lang, can_next=can_next)
     )
 
 
@@ -320,6 +348,7 @@ async def handle_quiz_mode(message: Message):
     }
     
     lang_data["current_attempt"] = attempt
+    # FIX: Используем корректное имя переменной
     await async_save_progress(user_id, progress)
     
     # Показ первого вопроса
@@ -413,14 +442,15 @@ async def finish_quiz(message: Message, user_id: int, lang: str, attempt: dict):
     
     # Очистка активной попытки
     progress = await async_load_progress(user_id)
-    progress[lang]["current_attempt"] = None
+    if lang in progress:
+        progress[lang]["current_attempt"] = None
     
     # Проверка условия разблокировки следующего блока
     block = get_block_by_id(attempt["block_id"])
     threshold = block.get("unlock_threshold", UNLOCK_THRESHOLD) if block else UNLOCK_THRESHOLD
     
     unlocked_next = False
-    if score >= threshold:
+    if lang in progress:
         lang_data = progress[lang]
         if attempt["block_id"] not in lang_data["completed_blocks"]:
             lang_data["completed_blocks"].append(attempt["block_id"])
@@ -432,6 +462,7 @@ async def finish_quiz(message: Message, user_id: int, lang: str, attempt: dict):
             unlocked_next = True
             await message.answer(f"🎉 Поздравляем! Следующий блок разблокирован!")
     
+    # FIX: Используем корректное имя переменной
     await async_save_progress(user_id, progress)
     
     # Итоговое сообщение
@@ -498,7 +529,7 @@ async def repeat_quiz(message: Message):
     
     # Сброс активной попытки если есть
     progress = await async_load_progress(user_id)
-    if progress.get(lang, {}).get("current_attempt"):
+    if lang in progress and progress[lang].get("current_attempt"):
         progress[lang]["current_attempt"] = None
         await async_save_progress(user_id, progress)
     
@@ -572,6 +603,91 @@ async def back_to_main(message: Message):
         await show_main_menu(message, user_id, lang)
     else:
         await cmd_start(message)
+
+
+# === НАВИГАЦИЯ ПО БЛОКАМ (ИСПРАВЛЕНИЕ ЗАВИСАНИЙ) ===
+
+@dp.callback_query(F.data == "blocks_list")
+async def blocks_list_handler(callback: CallbackQuery):
+    """Обработчик кнопки 'К списку блоков'"""
+    # 1. Мгновенно подтверждаем callback (спасаем от таймаута)
+    await callback.answer()
+    
+    user_id = callback.from_user.id
+    lang = load_user_language(user_id)
+    
+    if not lang:
+        await callback.message.answer("⚠️ Сначала выберите язык командой /start")
+        return
+    
+    # 2. Безопасная загрузка блоков
+    blocks = get_all_blocks_by_language(lang)
+    if not blocks:
+        await callback.message.edit_text("📭 Пока нет доступных блоков для этого языка.")
+        return
+    
+    # 3. Формируем клавиатуру с проверками
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=f"#{b['id']} | {b['title']}", 
+            callback_data=f"block_{b['id']}"
+        )]
+        for b in blocks
+    ])
+    
+    try:
+        await callback.message.edit_text(
+            f"📚 Учебные блоки ({lang}):\nВыберите номер:", 
+            reply_markup=keyboard
+        )
+    except Exception:
+        # Если текст слишком длинный или сообщение уже изменено
+        await callback.message.answer(
+            f"📚 Учебные блоки ({lang}):\nВыберите номер:", 
+            reply_markup=keyboard
+        )
+
+
+@dp.callback_query(F.data.startswith("block_"))
+async def open_block_handler(callback: CallbackQuery):
+    """Обработчик выбора конкретного блока"""
+    await callback.answer()
+    
+    try:
+        block_id = int(callback.data.split("_")[1])
+    except ValueError:
+        await callback.message.edit_text("❌ Некорректный запрос блока")
+        return
+        
+    block = get_block_by_id(block_id)
+    if not block:
+        await callback.message.edit_text("❌ Блок не найден в data.json")
+        return
+    
+    # Формируем теорию
+    terms = block.get("terms", [])
+    terms_text = "\n\n".join([f"🔹 <b>{t['term']}</b>\n{t.get('definition', '')}" for t in terms])
+    
+    # Проверка на следующий блок
+    next_id = block_id + 1
+    can_next = any(b['id'] == next_id for b in DATA.get('blocks', []))
+    
+    try:
+        await callback.message.edit_text(
+            f"📖 <b>{block['title']}</b>\n\n"
+            f"{block.get('description', '')}\n\n"
+            f"{terms_text or '📭 Термины пока не добавлены'}\n\n"
+            f"💡 Изучите материал → переходите в 🧠 Задание",
+            parse_mode="HTML",
+            reply_markup=get_block_navigation_keyboard(block_id, block.get('language'), can_next=can_next)
+        )
+    except Exception:
+        # Fallback если edit_text не сработал
+        await callback.message.answer(
+            f"📖 <b>{block['title']}</b>\n\n{terms_text or '📭 Термины пока не добавлены'}",
+            parse_mode="HTML",
+            reply_markup=get_block_navigation_keyboard(block_id, block.get('language'), can_next=can_next)
+        )
 
 
 # === АДМИН-ПАНЕЛЬ ===
@@ -967,21 +1083,23 @@ async def main():
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
     
-    # Для Render: если webhook режим, нужна дополнительная настройка
-    if RENDER_MODE and os.getenv("WEBHOOK_URL"):
-        logger.info("🌐 Запуск в webhook-режиме (Render)")
-        # Здесь нужна интеграция с aiohttp для webhook
-        # Для простоты оставляем polling с обработкой SIGTERM
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-    else:
-        logger.info("🔄 Запуск в polling-режиме")
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    logger.info("🔄 Запуск в polling-режиме (оптимизировано для Render Background Worker)")
+    # Запускаем polling. Для Render типа "Background Worker" это идеальный режим.
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 
 if __name__ == "__main__":
+    # Обработка сигналов завершения для корректной остановки
+    def graceful_exit(signum, frame):
+        logger.info("🛑 Получен сигнал завершения. Корректная остановка...")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, graceful_exit)
+    signal.signal(signal.SIGINT, graceful_exit)
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("👋 Остановка по сигналу Ctrl+C")
+        logger.info("👋 Остановка по Ctrl+C")
     except Exception as e:
         logger.error(f"💥 Критическая ошибка: {e}", exc_info=True)
