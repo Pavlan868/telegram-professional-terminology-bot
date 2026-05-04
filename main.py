@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.0 - ADMIN PRO (ПОЛНАЯ ИСПРАВЛЕННАЯ)
+# Версия 6.1 - ИСПРАВЛЕН ПЕРЕХВАТ СООБЩЕНИЙ (FSM)
 import asyncio
 import json
 import logging
@@ -122,7 +122,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # ✅ ИСПРАВЛЕНО
+        if key not in user_data:
             user_data[key] = val
     return user_data
 
@@ -547,11 +547,21 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
+# === НЕИЗВЕСТНЫЕ СООБЩЕНИЯ (ИСПРАВЛЕНО) ===
 @dp.message()
-async def handle_unknown(message: Message):
+async def handle_unknown(message: Message, state: FSMContext):
+    # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
+    # Проверяем, находится ли пользователь в каком-либо FSM состоянии.
+    # Если да — выходим, чтобы не перехватывать ввод для админки или других FSM процессов.
+    current_state = await state.get_state()
+    if current_state is not None:
+        return
+    
     lang = load_user_language(message.from_user.id)
-    if lang: await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
-    else: await message.answer("👋 Нажми /start", reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/start")]], resize_keyboard=True))
+    if lang:
+        await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
+    else:
+        await message.answer("👋 Нажми /start", reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/start")]], resize_keyboard=True))
 
 async def main():
     init_db()
