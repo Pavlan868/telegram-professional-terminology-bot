@@ -1,5 +1,5 @@
 # main.py
-# Версия 9.0 - УДАЛЕНИЕ ВОПРОСОВ + ИСПРАВЛЕНИЕ КЭША
+# Версия 8.1 - ИСПРАВЛЕНИЕ: НОВЫЕ ВОПРОСЫ ПОЯВЛЯЮТСЯ СРАЗУ
 import asyncio
 import json
 import logging
@@ -11,7 +11,7 @@ from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKe
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile, get_block_by_id, add_question_to_block, delete_question_from_block
+from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile, get_block_by_id, add_question_to_block
 
 logging.basicConfig(level=logging.INFO)
 
@@ -68,10 +68,6 @@ class AdminStates(StatesGroup):
     adding_q_options = State()
     adding_q_correct = State()
     adding_q_explanation = State()
-    # 🔥 Новые состояния для удаления
-    del_lang = State()
-    del_block = State()
-    del_id = State()
 
 def get_level(xp):
     current = LEVELS[0]
@@ -131,7 +127,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # ✅ Исправлено
+        if key not in user_data:
             user_data[key] = val
     return user_data
 
@@ -419,7 +415,6 @@ async def admin_panel(message: Message):
     if not is_admin(uid): return await message.answer("❌ Доступ запрещён")
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
-        [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")], # 🔥 НОВАЯ КНОПКА
         [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
         [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
         [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
@@ -482,7 +477,6 @@ async def admin_show_stats(message: Message, state: FSMContext):
     await message.answer(msg, parse_mode=None)
     await state.clear()
 
-# === ДОБАВЛЕНИЕ ВОПРОСОВ (Старый код) ===
 @dp.callback_query(lambda c: c.data == "admin_add")
 async def admin_add_start(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -548,80 +542,13 @@ async def admin_add_finish(message: Message, state: FSMContext):
     success = add_question_to_block(data["block_id"], new_q)
     
     if success:
-        reload_data()  # 🔥 Обновляем кэш
+        reload_data()  # 🔥 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: обновляем память бота
         await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**\n💾 Появится в тестах сразу.")
     else:
         await message.answer("❌ Ошибка при сохранении вопроса.")
     
     await state.clear()
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
-    await message.answer("🔧 **Админка**", reply_markup=keyboard)
-
-# === УДАЛЕНИЕ ВОПРОСОВ (НОВЫЙ КОД) ===
-@dp.callback_query(lambda c: c.data == "admin_del_req")
-async def admin_del_start(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    langs = list(set(b.get("language") for b in DATA.get("blocks", [])))
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=l, callback_data=f"admin_del_lang_{l}")] for l in langs])
-    await callback.message.edit_text("❌ **Удаление: Выбери язык:**", reply_markup=keyboard)
-    await state.set_state(AdminStates.del_lang)
-
-@dp.callback_query(AdminStates.del_lang, lambda c: c.data.startswith("admin_del_lang_"))
-async def admin_del_lang(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    lang = callback.data.split("_")[-1]
-    await state.update_data(lang=lang)
-    blocks = [b for b in DATA.get("blocks", []) if b.get("language") == lang]
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f"#{b['id']} {b['title'][:15]}", callback_data=f"admin_del_block_{b['id']}")] for b in blocks])
-    await callback.message.edit_text(f"📦 **Удаление: Выбери блок ({lang}):**", reply_markup=keyboard)
-    await state.set_state(AdminStates.del_block)
-
-@dp.callback_query(AdminStates.del_block, lambda c: c.data.startswith("admin_del_block_"))
-async def admin_del_block(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    block_id = int(callback.data.split("_")[-1])
-    await state.update_data(block_id=block_id)
-    
-    # Получаем список вопросов для показа
-    block = get_block_by_id(block_id)
-    tasks = block.get("tasks", []) if block else []
-    
-    if not tasks:
-        await callback.message.answer("📭 В этом блоке нет вопросов.")
-        await state.clear()
-        return
-    
-    # Формируем список
-    text = f"🗑️ **Выбери ID вопроса для удаления:**\n\n"
-    for q in tasks:
-        text += f"🆔 **ID: {q['id']}** | {q['question'][:30]}...\n"
-    
-    text += "\n👇 **Напиши ID вопроса**, который нужно удалить:"
-    
-    await callback.message.answer(text, parse_mode=None)
-    await state.set_state(AdminStates.del_id)
-
-@dp.message(AdminStates.del_id)
-async def admin_del_id(message: Message, state: FSMContext):
-    try:
-        q_id = int(message.text)
-    except:
-        await message.answer("❌ Введите числовой ID вопроса.")
-        return
-    
-    data = await state.get_data()
-    block_id = data.get("block_id")
-    
-    success = delete_question_from_block(block_id, q_id)
-    
-    if success:
-        reload_data() # 🔥 Обновляем кэш
-        await message.answer(f"✅ **Вопрос #{q_id} удален!**")
-    else:
-        await message.answer(f"❌ **Вопрос #{q_id} не найден или ошибка.**")
-    
-    await state.clear()
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Удалить ещё", callback_data="admin_del_req")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
 @dp.message(~StateFilter('*'))
