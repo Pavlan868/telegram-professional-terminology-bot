@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.4 - ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ FSM
+# Версия 6.5 - ФИНАЛЬНАЯ ИСПРАВЛЕННАЯ (state: FSMContext)
 import asyncio
 import json
 import logging
@@ -116,7 +116,7 @@ def ensure_user_data(progress, lang):
     user_data = progress[lang]
     defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
-        if key not in user_data:  # 🔥 ИСПРАВЛЕНО: было "user_" без "data" и ":"
+        if key not in user_:
             user_data[key] = val
     return user_data
 
@@ -420,11 +420,12 @@ async def admin_reset(callback: CallbackQuery):
     await callback.message.answer("♻️ **Прогресс сброшен!**")
     await show_main_menu(callback.message, uid, lang)
 
+# 🔥 ИСПРАВЛЕНО: добавлен параметр state: FSMContext
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
-async def admin_stats_req(callback: CallbackQuery):
+async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await callback.message.answer("🆔 **Введите ID пользователя:**")
-    await callback.state.set_state(AdminStates.waiting_for_stats_id)
+    await state.set_state(AdminStates.waiting_for_stats_id)
 
 @dp.message(AdminStates.waiting_for_stats_id)
 async def admin_show_stats(message: Message, state: FSMContext):
@@ -531,8 +532,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# === НЕИЗВЕСТНЫЕ СООБЩЕНИЯ (ОКОНЧАТЕЛЬНОЕ ИСПРАВЛЕНИЕ) ===
-@dp.message(~StateFilter('*'))  # 🔥 Игнорируем ЛЮБОЕ активное FSM-состояние
+@dp.message(~StateFilter('*'))
 async def handle_unknown(message: Message):
     lang = load_user_language(message.from_user.id)
     if lang:
