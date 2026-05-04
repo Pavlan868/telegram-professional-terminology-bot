@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.2 - ПОЛНЫЙ, ИСПРАВЛЕННЫЙ, ГОТОВЫЙ К ДЕПЛОЮ
+# Версия 6.3 - ИСПРАВЛЕН ПЕРЕХВАТ FSM В АДМИНКЕ
 import asyncio
 import json
 import logging
@@ -8,7 +8,7 @@ import random
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from database import init_db, load_user_language, save_user_language, load_progress, save_progress, get_user_profile
@@ -548,15 +548,11 @@ async def admin_add_finish(message: Message, state: FSMContext):
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
 # === НЕИЗВЕСТНЫЕ СООБЩЕНИЯ (ИСПРАВЛЕНО) ===
-@dp.message()
-async def handle_unknown(message: Message, state: FSMContext):
-    # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
-    # Если пользователь находится в FSM-состоянии (ждёт ввода ID, вопроса и т.д.),
-    # этот хендлер пропускает сообщение, чтобы его обработал соответствующий FSM-обработчик.
-    current_state = await state.get_state()
-    if current_state is not None:
-        return
-    
+@dp.message(StateFilter(None))
+async def handle_unknown(message: Message):
+    # 🔥 StateFilter(None) гарантирует, что этот хендлер сработает ТОЛЬКО
+    # если пользователь НЕ находится ни в каком FSM-состоянии.
+    # Таким образом, ввод ID и вопросов в админке НЕ будет перехватываться.
     lang = load_user_language(message.from_user.id)
     if lang:
         await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
