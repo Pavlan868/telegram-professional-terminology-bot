@@ -1,5 +1,5 @@
 # main.py
-# Версия 6.1 - ИСПРАВЛЕН ПЕРЕХВАТ СООБЩЕНИЙ (FSM)
+# Версия 6.2 - ПОЛНЫЙ, ИСПРАВЛЕННЫЙ, ГОТОВЫЙ К ДЕПЛОЮ
 import asyncio
 import json
 import logging
@@ -551,8 +551,8 @@ async def admin_add_finish(message: Message, state: FSMContext):
 @dp.message()
 async def handle_unknown(message: Message, state: FSMContext):
     # 🔥 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ:
-    # Проверяем, находится ли пользователь в каком-либо FSM состоянии.
-    # Если да — выходим, чтобы не перехватывать ввод для админки или других FSM процессов.
+    # Если пользователь находится в FSM-состоянии (ждёт ввода ID, вопроса и т.д.),
+    # этот хендлер пропускает сообщение, чтобы его обработал соответствующий FSM-обработчик.
     current_state = await state.get_state()
     if current_state is not None:
         return
