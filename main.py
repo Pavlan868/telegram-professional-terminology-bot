@@ -1,5 +1,5 @@
 # main.py
-# ФИНАЛЬНАЯ ВЕРСИЯ 4.5 - ПРОВЕРЕНО НА ОШИБКИ
+# Версия 4.6 - ИСПРАВЛЕНЫ ВСЕ ОШИБКИ + КНОПКА СМЕНЫ ЯЗЫКА
 import asyncio
 import json
 import logging
@@ -9,7 +9,7 @@ import signal
 import sys
 from asyncio import Lock
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
@@ -59,8 +59,8 @@ _user_locks: Dict[int, Lock] = {}
 
 ACHIEVEMENTS = {
     "first_block": {"id": "first_block", "name": "First Step", "description": "Complete first block", "icon": "🎯", "xp_reward": 50},
-    "perfect_block": {"id": "perfect_block", "name": "Perfect!", "description": "Complete block without errors", "icon": "✨", "xp_reward": 100},
-    "speed_demon": {"id": "speed_demon", "name": "Speed Demon", "description": "Complete block in under 2 minutes", "icon": "⚡", "xp_reward": 75},
+    "perfect_block": {"id": "perfect_block", "name": "Perfect!", "description": "Complete without errors", "icon": "✨", "xp_reward": 100},
+    "speed_demon": {"id": "speed_demon", "name": "Speed Demon", "description": "Complete in under 2 min", "icon": "⚡", "xp_reward": 75},
 }
 
 LEVELS = [
@@ -171,8 +171,8 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=[
         [KeyboardButton(text="📚 Study"), KeyboardButton(text="🧠 Quiz")],
         [KeyboardButton(text="🔁 Repeat Study"), KeyboardButton(text="🧪 Repeat Quiz")],
-        [KeyboardButton(text="🏆 Achievements"), KeyboardButton(text="👤 Profile")],
-        [KeyboardButton(text="⚙️ Settings")]], resize_keyboard=True)
+        [KeyboardButton(text="🔄 Change Language"), KeyboardButton(text="🏆 Achievements")],
+        [KeyboardButton(text="👤 Profile"), KeyboardButton(text="⚙️ Settings")]], resize_keyboard=True)
 
 def get_language_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=lang)] for lang in FIRST_BLOCK_ID.keys()],
@@ -303,6 +303,13 @@ async def show_main_menu(message: Message, user_id: int, lang: str):
         logger.error(f"Error showing menu: {e}", exc_info=True)
         await message.answer(f"Error: {e}")
 
+@dp.message(F.text == "🔄 Change Language")
+async def change_language(message: Message):
+    await message.answer(
+        "📌 Choose a new language:\n⚠️ Progress on old language will be saved",
+        reply_markup=get_language_keyboard()
+    )
+
 @dp.message(F.text == "📚 Study")
 async def handle_study_mode(message: Message):
     try:
@@ -337,7 +344,7 @@ async def handle_study_mode(message: Message):
         logger.error(f"Error in study mode: {e}", exc_info=True)
         await message.answer(f"Error: {e}")
 
-@dp.message(F.text == "🔁 Повторить обучение")
+@dp.message(F.text == "🔁 Repeat Study")
 async def repeat_study(message: Message):
     try:
         user_id = message.from_user.id
@@ -702,7 +709,6 @@ async def show_settings(message: Message):
         "⚙️ Settings\n\n"
         "/start - Main menu\n"
         "/reset - Reset progress\n"
-        "/lang - Change language\n"
         "/admin - Admin panel\n\n"
         "Developer: @Pavlan868"
     )
