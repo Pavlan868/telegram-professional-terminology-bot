@@ -1,5 +1,5 @@
 # main.py
-# Версия 11.0 - ПОЛНОСТЬЮ ВОССТАНОВЛЕННАЯ (АДМИНКА + БОЛЬШОЙ JSON)
+# Версия 12.0 - ФИНАЛЬНАЯ (ALL FEATURES + 30 ACHIEVEMENTS + DYNAMIC XP)
 import asyncio
 import json
 import logging
@@ -22,7 +22,7 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# 🔥 ЗАГРУЗКА БОЛЬШОГО data.json
+# 🔥 ЗАГРУЗКА data.json
 try:
     with open("data.json", "r", encoding="utf-8") as f:
         DATA = json.load(f)
@@ -43,10 +43,38 @@ def reload_data():
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
+# 🏆 30 ДОСТИЖЕНИЙ
 ACHIEVEMENTS = {
-    "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "desc": "Пройти первый блок", "xp": 50},
-    "perfect_block": {"id": "perfect_block", "name": "💎 Идеально!", "desc": "100% в блоке", "xp": 100},
-    "speed_demon": {"id": "speed_demon", "name": "⚡ Скорострел", "desc": "Блок < 2 мин", "xp": 75},
+    "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "desc": "Пройти первый учебный блок", "xp": 50},
+    "polyglot": {"id": "polyglot", "name": "🌍 Полиглот", "desc": "Начать изучение 3 разных языков", "xp": 150},
+    "master_all": {"id": "master_all", "name": "👑 Мастер кода", "desc": "Пройти все блоки по всем языкам", "xp": 500},
+    "speed_learner": {"id": "speed_learner", "name": "⚡ Скоростной ученик", "desc": "Пройти блок быстрее 60 секунд", "xp": 75},
+    "marathon": {"id": "marathon", "name": "🏃 Марафонец", "desc": "Пройти 10 блоков подряд без перерыва", "xp": 200},
+    "perfect_block": {"id": "perfect_block", "name": "💎 Идеально!", "desc": "100% правильных ответов в блоке", "xp": 100},
+    "sharp_eye": {"id": "sharp_eye", "name": "🎯 Острый глаз", "desc": "5 блоков подряд с точностью >90%", "xp": 175},
+    "no_mistakes": {"id": "no_mistakes", "name": "🛡️ Безупречный", "desc": "20 вопросов подряд без ошибок", "xp": 250},
+    "hardcore": {"id": "hardcore", "name": "🔥 Хардкор", "desc": "Пройти блок, где все вопросы сложности Hard", "xp": 300},
+    "comeback_king": {"id": "comeback_king", "name": "🔄 Король возвращения", "desc": "Исправить 3 ошибки подряд после серии провалов", "xp": 125},
+    "daily_streak_3": {"id": "daily_streak_3", "name": "📅 Три дня подряд", "desc": "Заходить в бота 3 дня подряд", "xp": 60},
+    "daily_streak_7": {"id": "daily_streak_7", "name": "🗓️ Недельный челлендж", "desc": "Заходить в бота 7 дней подряд", "xp": 150},
+    "daily_streak_30": {"id": "daily_streak_30", "name": "🏆 Месяц с ботом", "desc": "Заходить в бота 30 дней подряд", "xp": 500},
+    "early_bird": {"id": "early_bird", "name": "🌅 Ранняя пташка", "desc": "Пройти блок до 9 утра", "xp": 40},
+    "night_owl": {"id": "night_owl", "name": "🦉 Ночной кодёр", "desc": "Пройти блок после 23:00", "xp": 40},
+    "language_explorer": {"id": "language_explorer", "name": "🗺️ Исследователь языков", "desc": "Попробовать вопросы по всем 5 языкам", "xp": 200},
+    "git_master": {"id": "git_master", "name": "🌿 Git-гуру", "desc": "Пройти все блоки по Git", "xp": 180},
+    "python_pro": {"id": "python_pro", "name": "🐍 Python-профи", "desc": "Пройти все блоки по Python", "xp": 180},
+    "cpp_warrior": {"id": "cpp_warrior", "name": "⚔️ C++ Воин", "desc": "Пройти все блоки по C++", "xp": 180},
+    "java_champion": {"id": "java_champion", "name": "☕ Java-чемпион", "desc": "Пройти все блоки по Java", "xp": 180},
+    "first_admin": {"id": "first_admin", "name": "🔧 Первый админ", "desc": "Воспользоваться админ-панелью", "xp": 30},
+    "question_creator": {"id": "question_creator", "name": "✍️ Создатель вопросов", "desc": "Добавить свой первый вопрос через админку", "xp": 100},
+    "helper": {"id": "helper", "name": "🤝 Помощник", "desc": "Просмотреть объяснения к 50 вопросам", "xp": 80},
+    "curious": {"id": "curious", "name": "🔍 Любопытный", "desc": "Прочитать все термины в блоке перед тестом", "xp": 50},
+    "lucky_guess": {"id": "lucky_guess", "name": "🍀 Везунчик", "desc": "Угадать 5 сложных вопросов подряд с первой попытки", "xp": 90},
+    "second_chance": {"id": "second_chance", "name": "🔄 Второй шанс", "desc": "Улучшить результат в блоке при повторном прохождении", "xp": 70},
+    "level_up_10": {"id": "level_up_10", "name": "📈 Десятый уровень", "desc": "Достичь уровня 'Эксперт'", "xp": 200},
+    "xp_hunter": {"id": "xp_hunter", "name": "💰 Охотник за XP", "desc": "Набрать 1000 XP", "xp": 150},
+    "knowledge_seeker": {"id": "knowledge_seeker", "name": "🧠 Искатель знаний", "desc": "Ответить на 100 вопросов", "xp": 200},
+    "legend": {"id": "legend", "name": "👑 Легенда", "desc": "Получить все остальные достижения", "xp": 1000}
 }
 
 LEVELS = [
@@ -203,11 +231,25 @@ async def handle_language_selection(message: Message):
     progress = load_progress(uid)
     user_data = ensure_user_data(progress, lang)
     bonus, streak, is_new = get_daily_bonus(user_data)
+    
     if is_new and bonus > 0:
         user_data["last_login_date"] = datetime.now().strftime("%Y-%m-%d")
         user_data["login_streak"] = streak
         user_data["xp"] += bonus
         await message.answer(f"🎁 **Бонус!** +{bonus} XP")
+        
+    # Проверка достижений серии
+    earned = []
+    achieved_ids = [a["id"] for a in user_data.get("achievements", [])]
+    if streak >= 3 and "daily_streak_3" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_3"])
+    if streak >= 7 and "daily_streak_7" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_7"])
+    if streak >= 30 and "daily_streak_30" not in achieved_ids: earned.append(ACHIEVEMENTS["daily_streak_30"])
+    
+    for ach in earned:
+        if ach["id"] not in achieved_ids:
+            user_data.setdefault("achievements", []).append({"id": ach["id"], "earned_at": datetime.now().isoformat()})
+            user_data["xp"] += ach["xp"]
+            
     await async_save_progress(uid, progress)
     await show_main_menu(message, uid, lang)
 
@@ -241,14 +283,23 @@ async def show_achievements(message: Message):
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
     earned_ids = [a["id"] for a in lang_data.get("achievements", [])]
+    
     msg = "🏆 **ДОСТИЖЕНИЯ**\n\n"
-    for ach_id in earned_ids:
-        if ach_id in ACHIEVEMENTS:
-            msg += f"{ACHIEVEMENTS[ach_id]['name']}\n_{ACHIEVEMENTS[ach_id]['desc']}_\n\n"
-    if not earned_ids: msg += "📭 Пока нет.\n\n"
-    msg += "\n🔒 **Заблокировано:**\n"
+    
+    if earned_ids:
+        msg += "✅ **Получено:**\n"
+        for ach_id in earned_ids:
+            if ach_id in ACHIEVEMENTS:
+                ach = ACHIEVEMENTS[ach_id]
+                msg += f"{ach['name']}\n_{ach['desc']}_\n\n"
+    else:
+        msg += "📭 Пока нет полученных достижений.\n\n"
+        
+    msg += "\n🔒 **Заблокировано (условия получения):**\n"
     for ach_id, ach in ACHIEVEMENTS.items():
-        if ach_id not in earned_ids: msg += f"🔒 {ach['name']}\n"
+        if ach_id not in earned_ids:
+            msg += f"🔒 {ach['name']}\n_{ach['desc']}_\n\n"
+            
     await message.answer(msg, parse_mode=None)
 
 @dp.message(lambda m: m.text == "🧠 Задание")
@@ -383,27 +434,50 @@ async def finish_quiz(message, uid, lang, attempt):
     old_xp = lang_data.get("xp", 0)
     
     xp_earned = 0
+    hard_correct = 0
+    consecutive_hard_correct = 0
     for i, q in enumerate(attempt["questions"]):
         if i < len(attempt["answers"]) and attempt["answers"][i]:
             diff = q.get("difficulty", "easy")
-            if diff == "hard": xp_earned += 30
-            elif diff == "medium": xp_earned += 20
-            else: xp_earned += 10
+            if diff == "hard": 
+                xp_earned += 30
+                consecutive_hard_correct += 1
+                hard_correct += 1
+            elif diff == "medium": 
+                xp_earned += 20
+                consecutive_hard_correct = 0
+            else: 
+                xp_earned += 10
+                consecutive_hard_correct = 0
     
     time_bonus = 20 if time_spent < 120 else 0
     new_xp = old_xp + xp_earned + time_bonus
     
     earned = []
     achieved_ids = [a["id"] for a in lang_data.get("achievements", [])]
+    
+    # Проверка достижений
     if "first_block" not in achieved_ids and len(lang_data.get("completed_blocks", [])) == 0: earned.append(ACHIEVEMENTS["first_block"])
     if "perfect_block" not in achieved_ids and score == 1.0: earned.append(ACHIEVEMENTS["perfect_block"])
-    if "speed_demon" not in achieved_ids and time_spent < 120: earned.append(ACHIEVEMENTS["speed_demon"])
+    if "speed_learner" not in achieved_ids and time_spent < 60: earned.append(ACHIEVEMENTS["speed_learner"])
+    if "hardcore" not in achieved_ids and hard_correct == total: earned.append(ACHIEVEMENTS["hardcore"])
+    if "lucky_guess" not in achieved_ids and consecutive_hard_correct >= 5: earned.append(ACHIEVEMENTS["lucky_guess"])
+    if "early_bird" not in achieved_ids and datetime.now().hour < 9: earned.append(ACHIEVEMENTS["early_bird"])
+    if "night_owl" not in achieved_ids and datetime.now().hour >= 23: earned.append(ACHIEVEMENTS["night_owl"])
+    if "knowledge_seeker" not in achieved_ids and lang_data.get("total_answered", 0) >= 100: earned.append(ACHIEVEMENTS["knowledge_seeker"])
+    if "xp_hunter" not in achieved_ids and new_xp >= 1000: earned.append(ACHIEVEMENTS["xp_hunter"])
+    if "level_up_10" not in achieved_ids and get_level(new_xp)[1] == "🎓 Эксперт": earned.append(ACHIEVEMENTS["level_up_10"])
     
     for ach in earned:
         if ach["id"] not in achieved_ids:
             lang_data.setdefault("achievements", []).append({"id": ach["id"], "earned_at": datetime.now().isoformat()})
             new_xp += ach["xp"]
-    
+            
+    # Проверка Легенды (все достижения)
+    if len(lang_data.get("achievements", [])) >= len(ACHIEVEMENTS) - 1 and "legend" not in achieved_ids:
+        lang_data["achievements"].append({"id": "legend", "earned_at": datetime.now().isoformat()})
+        new_xp += 1000
+
     old_level = get_level(old_xp)
     new_level = get_level(new_xp)
     leveled_up = old_level[0] != new_level[0]
@@ -423,12 +497,10 @@ async def finish_quiz(message, uid, lang, attempt):
     accuracy = (total_corr / total_ans * 100) if total_ans > 0 else 0
     
     msg = (f"🏁 **Готово!**\n✅ {correct}/{total}\n📊 {score*100:.0f}%\n⏱️ {time_spent}с\n💎 XP: +{xp_earned + time_bonus}\n🎯 **Точность: {accuracy:.1f}%**")
-    if earned: msg += "\n\n🏆 **ДОСТИЖЕНИЯ:**\n" + "\n".join([f"{a['name']} (+{a['xp']} XP)" for a in earned])
+    if earned: msg += "\n\n🏆 **НОВЫЕ ДОСТИЖЕНИЯ:**\n" + "\n".join([f"{a['name']} (+{a['xp']} XP)" for a in earned])
     if leveled_up: msg += f"\n\n🆙 **НОВЫЙ УРОВЕНЬ!**\n{new_level[1]}"
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
-
-# 🔥 АДМИНКА (ВОССТАНОВЛЕНА)
 
 @dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
@@ -577,7 +649,7 @@ async def admin_add_finish(message: Message, state: FSMContext):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
     await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# === УДАЛЕНИЕ ВОПРОСОВ (ВОССТАНОВЛЕНО) ===
+# === УДАЛЕНИЕ ВОПРОСОВ ===
 @dp.callback_query(lambda c: c.data == "admin_del_req")
 async def admin_del_start(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
