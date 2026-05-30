@@ -101,51 +101,56 @@ def load_progress(user_id: int) -> dict:
         return row[0] if isinstance(row[0], dict) else json.loads(row[0])
     return {}
 
-def get_all_users_count() -> int:
+def get_all_users_stats():
     conn = _get_conn()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM users")
-    count = cur.fetchone()[0]
+    total = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT COUNT(*) FROM users 
+        WHERE last_seen >= NOW() - INTERVAL '7 days'
+    """)
+    active_7d = cur.fetchone()[0]
+    
+    cur.execute("""
+        SELECT user_id, username, first_name, last_seen, language 
+        FROM users 
+        WHERE last_seen < NOW() - INTERVAL '7 days'
+        ORDER BY last_seen DESC
+    """)
+    inactive = cur.fetchall()
+    
     cur.close()
     conn.close()
-    return count
-
-def get_users_by_language() -> dict:
-    conn = _get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT language, COUNT(*) FROM users WHERE language IS NOT NULL GROUP BY language")
-    result = {row[0]: row[1] for row in cur.fetchall()}
-    cur.close()
-    conn.close()
-    return result
+    return {
+        "total": total,
+        "active_7d": active_7d,
+        "inactive": [dict(u) for u in inactive]
+    }
 
 # === РАБОТА С ВОПРОСАМИ (data.json) ===
-
 def add_question_to_block(block_id: int, question_dict: dict) -> bool:
-    """Добавляет вопрос в data.json"""
     try:
         with open("data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
-        
         for block in data.get("blocks", []):
             if block.get("id") == block_id:
                 tasks = block.get("tasks", [])
                 new_id = max((q.get("id", 0) for q in tasks), default=0) + 1
-                
                 new_question = {
                     "id": new_id,
                     "question": question_dict.get("question", ""),
                     "options": question_dict.get("options", []),
                     "correct": question_dict.get("correct", 0),
                     "explanation": question_dict.get("explanation", ""),
-                    "code": question_dict.get("code", "")
+                    "code": question_dict.get("code", ""),
+                    "difficulty": question_dict.get("difficulty", "medium")
                 }
                 tasks.append(new_question)
                 block["tasks"] = tasks
-                
                 with open("data.json", "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
-                
                 return True
         return False
     except Exception as e:
@@ -153,26 +158,20 @@ def add_question_to_block(block_id: int, question_dict: dict) -> bool:
         return False
 
 def delete_question_from_block(block_id: int, question_id: int) -> bool:
-    """Удаляет вопрос из data.json по ID"""
     try:
         with open("data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
-        
         for block in data.get("blocks", []):
             if block.get("id") == block_id:
                 tasks = block.get("tasks", [])
                 original_count = len(tasks)
-                
-                # Оставляем только те вопросы, ID которых НЕ совпадает с удаляемым
                 block["tasks"] = [q for q in tasks if q.get("id") != question_id]
-                
                 if len(block["tasks"]) < original_count:
                     with open("data.json", "w", encoding="utf-8") as f:
                         json.dump(data, f, ensure_ascii=False, indent=2)
                     return True
-                else:
-                    return False # Вопрос с таким ID не найден
-        return False # Блок не найден
+                return False
+        return False
     except Exception as e:
         print(f"[ERROR] delete_question_from_block: {e}")
         return False
@@ -185,7 +184,7 @@ def get_block_by_id(block_id: int):
             if block.get("id") == block_id:
                 return block
         return None
-    except:
+    except Exception:
         return None
 
 def get_all_blocks_by_language(language: str) -> list:
@@ -193,5 +192,5 @@ def get_all_blocks_by_language(language: str) -> list:
         with open("data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         return [b for b in data.get("blocks", []) if b.get("language") == language]
-    except:
+    except Exception:
         return []
