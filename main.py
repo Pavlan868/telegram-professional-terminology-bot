@@ -370,14 +370,22 @@ async def task(message: Message):
     new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block", "start_time": datetime.now().timestamp(), "answers": []}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
+
     q = selected[0]
     code = f"```\n{q['code']}\n```" if q.get("code") else ""
-    
     diff = q.get("difficulty", "easy")
     diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
-    
-    diff = q.get("difficulty", "easy")
-    diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
+
+    # Для первого вопроса индекс всегда 0, отображаем как 1
+    index = 0
+    total = len(selected)
+    text = (
+        f"{diff_icon} **Вопрос {index+1}/{total}**\n\n"
+        f"❓ {q['question']}\n\n"
+        f"{code}\n\n"
+        f"🔘 **Варианты ответов:**\n\n"
+        f"{'\n'.join([f'{i+1}. {opt}' for i, opt in enumerate(q['options'])])}"
+    )
 
     options_formatted = "\n".join([
         f"   {i+1}. {opt}" for i, opt in enumerate(q["options"])
