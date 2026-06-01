@@ -777,24 +777,27 @@ async def finish_quiz(message, uid, lang, attempt):
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
 
-# ⚙️ ИСПРАВЛЕННАЯ АДМИНКА
 @dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
-
-    print(f"🔍 DEBUG: User ID={uid}, ADMIN_IDS={ADMIN_IDS}, is_admin={uid in ADMIN_IDS}") 
-
+    print(f"🔧 ADMIN CLICK: uid={uid}, is_admin={is_admin(uid)}, ADMIN_IDS={ADMIN_IDS}")
+    
     if not is_admin(uid):
+        print(f"❌ Access denied")
         return await message.answer("❌ Доступ запрещён", parse_mode=None)
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
-        [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")],
-        [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
-        [InlineKeyboardButton(text=" Все пользователи", callback_data="admin_all_stats")],
-        [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
-        [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
-    ])
-    await message.answer("🔧 **Админ-панель**", reply_markup=keyboard, parse_mode=None)
+    
+    print(f"✅ Admin access granted")
+    
+    try:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="➕ Добавить", callback_data="admin_add")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_back")]
+        ])
+        await message.answer("🔧 Тест админки", reply_markup=keyboard, parse_mode=None)
+        print(f"✅ Keyboard sent successfully")
+    except Exception as e:
+        print(f"❌ ERROR sending keyboard: {type(e).__name__}: {e}")
+        await message.answer(f"❌ Ошибка: {e}", parse_mode=None)
 
 @dp.callback_query(lambda c: c.data == "admin_back")
 async def admin_back(callback: CallbackQuery):
