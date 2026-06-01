@@ -289,30 +289,23 @@ async def change_language(message: Message):
         return
     await message.answer("📌 **Выбери язык:**", reply_markup=get_language_keyboard())
 
+# 2. learn (замени формирование terms_text)
 @dp.message(lambda m: m.text == "📚 Обучение")
 async def learn(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-    block = next(
-        (b for b in DATA["blocks"]
-         if b["id"] == lang_data.get("current_block", FIRST_BLOCK_ID[lang]) and b["language"] == lang),
-        None
-    )
-    if not block or not block.get("terms"):
-        return await message.answer("📭 Нет терминов.")
+    block = next((b for b in DATA["blocks"] if b["id"] == lang_data.get("current_block", FIRST_BLOCK_ID[lang]) and b["language"] == lang), None)
+    if not block or not block.get("terms"): return await message.answer("📭 Нет терминов.")
     
-    terms_parts = []
+    parts = []
     for t in block["terms"]:
-        example_block = ""
-        if t.get("example"):
-            example_block = "```\n" + t["example"] + "\n```"
-        terms_parts.append(f"**{t['term']}**\n_{t['definition']}_\n{example_block}")
+        ex = "```\n" + t["example"] + "\n```" if t.get("example") else ""
+        parts.append(f"**{t['term']}**\n_{t['definition']}_\n{ex}")
+    terms_text = "\n\n".join(parts)
     
-    terms_text = "\n\n".join(terms_parts)
     await message.answer(f"📘 **{block['title']}**\n{terms_text}", parse_mode=None)
 
 # 🆕 НОВЫЙ ХЕНДЛЕР: СПРАВОЧНИК С ПОИСКОМ
@@ -459,35 +452,17 @@ async def task(message: Message):
     
     # === ОТПРАВКА ПЕРВОГО ВОПРОСА ===
     q = selected[0]
-    
-    # 🔧 ИСПРАВЛЕНИЕ: код вынесен отдельно (нет бэкслеша внутри f-string)
-    code_block = ""
-    if q.get("code"):
-        code_block = "```\n" + q["code"] + "\n```"
-    
+    code_block = "```\n" + q["code"] + "\n```" if q.get("code") else ""
     diff = q.get("difficulty", "easy")
-    diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
-    
-    # 🔧 ИСПРАВЛЕНИЕ: визуальное разделение
-    options_formatted = "\n".join([f"   {i+1}. {opt}" for i, opt in enumerate(q["options"])])
-    
-    # 🔧 НОВОЕ: поддержка текстовых вопросов (если options пустой)
-    if not q.get("options"):
-        text = (
-            f"✍️ **Вопрос 1/{len(selected)}**\n\n"
-            f"{q['question']}\n\n"
-            f"{code_block}\n\n" if code_block else ""
-            f"_Введите ответ текстовым сообщением_"
-        )
-        await message.answer(text, parse_mode=None)
-        return
+    diff_icon = {"easy": "🟢", "medium": "", "hard": "🔴"}.get(diff, "⚪")
+    opts = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     
     text = (
         f"{diff_icon} **Вопрос 1/{len(selected)}**\n\n"
-        f"❓ {q['question']}\n\n"
+        f"{q['question']}\n\n"
         f"{code_block}\n\n" if code_block else ""
         f"🔘 **Варианты ответов:**\n\n"
-        f"{options_formatted}"
+        f"{opts}"
     )
     await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
 
@@ -575,15 +550,15 @@ async def repeat_test(message: Message):
     await async_save_progress(uid, progress)
     
     q = selected[0]
-    code_block = ""
-    if q.get("code"):
-        code_block = "```\n" + q["code"] + "\n```"
+    code_block = "```\n" + q["code"] + "\n```" if q.get("code") else ""
+    opts = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
+    
     text = (
         f"❓ **Вопрос 1/{len(selected)}**\n\n"
         f"{q['question']}\n\n"
         f"{code_block}\n\n" if code_block else ""
-        f"🔘 **Варианты ответов:**\n\n"
-        f"{'\n'.join([f'{i+1}. {opt}' for i, opt in enumerate(q['options'])])}"
+        f" **Варианты ответов:**\n\n"
+        f"{opts}"
     )
     await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
 
@@ -615,24 +590,22 @@ async def handle_inline_answer(callback: CallbackQuery):
         )
     attempt["index"] += 1
     await async_save_progress(uid, progress)
+    
     if attempt["index"] < attempt["total"]:
         q_next = attempt["questions"][attempt["index"]]
-        code_block = ""
-        if q_next.get("code"):
-            code_block = "```\n" + q_next["code"] + "\n```"
+        code_block = "```\n" + q_next["code"] + "\n```" if q_next.get("code") else ""
         diff = q_next.get("difficulty", "easy")
-        diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
-        options_formatted = "\n".join([f"   {i+1}. {opt}" for i, opt in enumerate(q_next["options"])])
+        diff_icon = {"easy": "🟢", "medium": "🟡", "hard": ""}.get(diff, "⚪")
+        opts = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q_next["options"])])
+        
         text = (
             f"{diff_icon} **Вопрос {attempt['index']+1}/{attempt['total']}**\n\n"
             f"❓ {q_next['question']}\n\n"
             f"{code_block}\n\n" if code_block else ""
             f"🔘 **Варианты ответов:**\n\n"
-            f"{options_formatted}"
+            f"{opts}"
         )
         await callback.message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
-    else:
-        await finish_quiz(callback.message, uid, lang, attempt)
 
 # 🆕 НОВЫЙ ХЕНДЛЕР: ОБРАБОТКА ТЕКСТОВЫХ ОТВЕТОВ
 @dp.message(F.text)
