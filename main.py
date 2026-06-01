@@ -532,7 +532,7 @@ async def finish_quiz(message, uid, lang, attempt):
     await show_main_menu(message, uid, lang)
 
 # ⚙️ АДМИНКА (ИСПРАВЛЕНА)
-@dp.message(lambda m: m.text == "️ Админка")
+@dp.message(lambda m: m.text == "️⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
     if not is_admin(uid):
