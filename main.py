@@ -589,7 +589,7 @@ async def admin_panel(message: Message):
         [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
         [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
         [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")],
-        [InlineKeyboardButton(text="📊 Все пользователи", callback_data="admin_all_stats")],
+        [InlineKeyboardButton(text="📊 Все пользователи", callback_data="admin_all_stats")]
     ])
     await message.answer("🔧 **Админ-панель**", reply_markup=keyboard)
 
