@@ -1,3 +1,4 @@
+# database.py
 import os
 import json
 import psycopg2
@@ -132,7 +133,6 @@ def add_question_to_block(block_id: int, question_dict: dict) -> bool:
                 tasks = block.get("tasks", [])
                 new_id = max((q.get("id", 0) for q in tasks), default=0) + 1
                 
-                # ДОБАВЛЕНЫ correct_text и difficulty
                 new_question = {
                     "id": new_id,
                     "question": question_dict.get("question", ""),
@@ -165,8 +165,6 @@ def delete_question_from_block(block_id: int, question_id: int) -> bool:
             if block.get("id") == block_id:
                 tasks = block.get("tasks", [])
                 original_count = len(tasks)
-                
-                # Оставляем только те вопросы, ID которых НЕ совпадает с удаляемым
                 block["tasks"] = [q for q in tasks if q.get("id") != question_id]
                 
                 if len(block["tasks"]) < original_count:
@@ -174,8 +172,8 @@ def delete_question_from_block(block_id: int, question_id: int) -> bool:
                         json.dump(data, f, ensure_ascii=False, indent=2)
                     return True
                 else:
-                    return False # Вопрос с таким ID не найден
-        return False # Блок не найден
+                    return False
+        return False
     except Exception as e:
         print(f"[ERROR] delete_question_from_block: {e}")
         return False
@@ -198,24 +196,22 @@ def get_all_blocks_by_language(language: str) -> list:
         return [b for b in data.get("blocks", []) if b.get("language") == language]
     except:
         return []
-    
+
+# === НОВАЯ ФУНКЦИЯ (была пропущена!) ===
 def get_all_users_stats():
     """Возвращает общую статистику по пользователям"""
     conn = _get_conn()
     cur = conn.cursor()
     
-    # Общее количество
     cur.execute("SELECT COUNT(*) FROM users")
     total = cur.fetchone()[0]
     
-    # Активные за 7 дней
     cur.execute("""
         SELECT COUNT(*) FROM users 
         WHERE last_seen >= NOW() - INTERVAL '7 days'
     """)
     active_7d = cur.fetchone()[0]
     
-    # Неактивные (>7 дней)
     cur.execute("""
         SELECT user_id, username, first_name, last_seen 
         FROM users 
