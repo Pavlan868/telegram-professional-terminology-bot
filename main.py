@@ -192,7 +192,7 @@ def get_answer_buttons():
         [InlineKeyboardButton(text="1️⃣", callback_data="ans_1"),
          InlineKeyboardButton(text="2️⃣", callback_data="ans_2"),
          InlineKeyboardButton(text="3️⃣", callback_data="ans_3")]
-    ], row_width=3)
+    ])
 
 @dp.message(Command("start"))
 async def start(message: Message):
@@ -588,7 +588,7 @@ async def admin_panel(message: Message):
         [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")],
         [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
         [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
-        [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
+        [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")],
         [InlineKeyboardButton(text="📊 Все пользователи", callback_data="admin_all_stats")],
     ])
     await message.answer("🔧 **Админ-панель**", reply_markup=keyboard)
