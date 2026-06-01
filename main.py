@@ -781,6 +781,9 @@ async def finish_quiz(message, uid, lang, attempt):
 @dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
+
+    print(f"🔍 DEBUG: User ID={uid}, ADMIN_IDS={ADMIN_IDS}, is_admin={uid in ADMIN_IDS}") 
+
     if not is_admin(uid):
         return await message.answer("❌ Доступ запрещён", parse_mode=None)
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
