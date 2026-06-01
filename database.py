@@ -132,13 +132,16 @@ def add_question_to_block(block_id: int, question_dict: dict) -> bool:
                 tasks = block.get("tasks", [])
                 new_id = max((q.get("id", 0) for q in tasks), default=0) + 1
                 
+                # ДОБАВЛЕНЫ correct_text и difficulty
                 new_question = {
                     "id": new_id,
                     "question": question_dict.get("question", ""),
                     "options": question_dict.get("options", []),
                     "correct": question_dict.get("correct", 0),
                     "explanation": question_dict.get("explanation", ""),
-                    "code": question_dict.get("code", "")
+                    "code": question_dict.get("code", ""),
+                    "correct_text": question_dict.get("correct_text", ""),
+                    "difficulty": question_dict.get("difficulty", "medium")
                 }
                 tasks.append(new_question)
                 block["tasks"] = tasks
