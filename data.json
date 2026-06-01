@@ -3,75 +3,160 @@
     {
       "id": 1,
       "language": "Python",
-      "title": "Основы ошибок в Python: синтаксис и выполнение",
-      "description": "NameError, IndentationError, TypeError и другие частые ошибки новичков",
+      "title": "Основы ошибок в Python: от синтаксиса до выполнения",
+      "description": "NameError, IndentationError, ModuleNotFoundError и другие частые ошибки новичков",
       "terms": [
         {
           "term": "NameError",
-          "definition": "Исключение при обращении к несуществующей переменной",
-          "example": "print(username)  # NameError: name 'username' is not defined"
+          "definition": "Исключение, возникающее при попытке использовать переменную, которая не была определена в текущей области видимости. Часто происходит из-за опечаток, неправильного порядка кода или отсутствия импорта.",
+          "example": "print(username)  # NameError: name 'username' is not defined\n# Решение: username = 'Alice' перед использованием"
         },
         {
           "term": "IndentationError",
-          "definition": "Нарушение правил отступов в блоках кода",
+          "definition": "Ошибка синтаксиса, связанная с нарушением правил отступов в Python. Поскольку отступы определяют блоки кода, их несоответствие приводит к невозможности интерпретации программы.",
           "example": "if True:\nprint('Hello')  # IndentationError: expected an indented block"
         },
         {
-          "term": "TypeError",
-          "definition": "Операция применена к объекту несоответствующего типа",
-          "example": "result = '5' + 3  # TypeError: can only concatenate str to str"
+          "term": "ModuleNotFoundError",
+          "definition": "Возникает при попытке импортировать модуль, который не установлен в окружении Python или не находится в sys.path. Часто решается через pip install.",
+          "example": "import pandas  # ModuleNotFoundError: No module named 'pandas'\n# Решение: pip install pandas"
         }
       ],
       "tasks": [
         {
           "id": 1,
-          "question": "Какая ошибка возникнет при выполнении этого кода?",
-          "code": "def greet(name):\n    return f'Hello, {name}'\n\nprint(greet())",
-          "options": ["TypeError: missing 1 required positional argument", "NameError: name 'name' is not defined", "SyntaxError: invalid syntax"],
+          "question": "Вы запускаете скрипт на Python и получаете ошибку 'NameError: name \"user_input\" is not defined'. Проанализируйте возможные причины этой ошибки в контексте порядка выполнения кода, областей видимости и типичных ошибок новичков. Какой из предложенных вариантов наиболее точно описывает корневую причину?",
+          "code": "def process_data():\n    result = transform(user_input)  # NameError здесь\n    return result\n\nuser_input = 'test'\nprocess_data()",
+          "options": [
+            "Переменная user_input используется внутри функции до того, как она была определена в глобальной области, и не передана как аргумент",
+            "Функция transform не импортирована",
+            "Нужно объявить user_input как global внутри функции"
+          ],
           "correct": 0,
-          "explanation": "Функция ожидает аргумент name, но вызвана без него. Python выбрасывает TypeError с указанием пропущенного параметра.",
-          "difficulty": "easy",
-          "why_matters": "Понимание сигнатур функций критично для написания корректного кода."
+          "explanation": "В Python переменные глобальной области видимости доступны внутри функций только для чтения, если не объявлены как global. Но главная проблема здесь — порядок: функция вызывается после определения user_input, но внутри функции интерпретатор ищет user_input в локальной области, не находит и вызывает NameError. Правильное решение — передавать user_input как аргумент.",
+          "difficulty": "medium",
+          "why_matters": "Понимание областей видимости и передачи аргументов критично для написания модульного и тестируемого кода."
         },
         {
           "id": 2,
-          "question": "Какое ключевое слово используется для обработки исключений в Python?",
-          "code": "",
-          "options": [],
-          "correct_text": "try",
-          "explanation": "Конструкция try/except позволяет перехватывать и обрабатывать исключения, предотвращая аварийное завершение программы.",
-          "difficulty": "easy",
-          "why_matters": "Обработка ошибок — основа надёжного ПО."
-        },
-        {
-          "id": 3,
-          "question": "Почему возникает IndentationError в этом примере?",
-          "code": "def calculate(x, y):\nresult = x + y\nreturn result",
-          "options": ["Отсутствуют отступы внутри функции", "Лишний пробел перед return", "Скобки не закрыты"],
+          "question": "При запуске кода вы получаете 'IndentationError: unexpected indent'. Внимательно изучите структуру отступов. В чём именно заключается ошибка и как её исправить, соблюдая правила PEP 8?",
+          "code": "def calculate_total(items):\n    total = 0\n      for item in items:  # <- здесь лишний отступ\n        total += item.price\n    return total",
+          "options": [
+            "Цикл for имеет лишний отступ относительно тела функции; нужно выровнять его с total = 0",
+            "Нужно добавить ещё один уровень отступа для total += item.price",
+            "Ошибка в return — он должен быть внутри цикла"
+          ],
           "correct": 0,
-          "explanation": "В Python отступы определяют границы блоков. Тело функции должно иметь единообразный отступ (обычно 4 пробела).",
+          "explanation": "В Python все инструкции внутри одного блока должны иметь одинаковый отступ. Здесь цикл for имеет 6 пробелов, а остальные строки функции — 4. Это нарушает синтаксис. Нужно выровнять отступы до 4 пробелов (стандарт PEP 8).",
           "difficulty": "easy",
           "why_matters": "Читаемость и корректность кода напрямую зависят от соблюдения стиля отступов."
         },
         {
+          "id": 3,
+          "question": "Вы пытаетесь импортировать библиотеку requests в чистом окружении Python и получаете 'ModuleNotFoundError: No module named 'requests''. Проанализируйте возможные причины и выберите наиболее полное и точное решение, учитывающее управление зависимостями в современных проектах.",
+          "code": "import requests\nresponse = requests.get('https://api.example.com/data')",
+          "options": [
+            "Библиотека не установлена в текущем окружении; решение: активировать виртуальное окружение и выполнить 'pip install requests', либо использовать requirements.txt для управления зависимостями",
+            "Нужно переустановить Python",
+            "Библиотека requests устарела, нужно использовать urllib"
+          ],
+          "correct": 0,
+          "explanation": "ModuleNotFoundError означает, что интерпретатор не находит модуль в sys.path. Чаще всего это решается установкой через pip. В профессиональной разработке рекомендуется использовать виртуальные окружения (venv, poetry) и файл requirements.txt для воспроизводимости.",
+          "difficulty": "medium",
+          "why_matters": "Управление зависимостями — базовый навык для любого Python-разработчика."
+        },
+        {
           "id": 4,
-          "question": "Какой метод используется для добавления элемента в конец списка?",
-          "code": "items = []\nitems.____('new_item')",
-          "options": [],
-          "correct_text": "append",
-          "explanation": "В Python метод append() добавляет элемент в конец списка. Метод push() отсутствует (он есть в JavaScript/C++).",
+          "question": "Вы получаете ошибку 'TypeError: 'int' object is not iterable' при выполнении цикла for. Проанализируйте код и объясните, почему целое число не может быть использовано в цикле for напрямую, и какие существуют корректные способы итерации по числовым последовательностям в Python.",
+          "code": "count = 5\nfor i in count:  # TypeError здесь\n    print(i)",
+          "options": [
+            "Целое число не является итерируемым объектом; для итерации нужно использовать range(count) или преобразовать в список",
+            "Нужно объявить count как list",
+            "Ошибка в print — нужно использовать str(i)"
+          ],
+          "correct": 0,
+          "explanation": "Цикл for в Python работает только с итерируемыми объектами (списки, кортежи, строки, range и т.д.). int не поддерживает протокол итерации. Правильное решение: for i in range(count).",
           "difficulty": "easy",
-          "why_matters": "Знание стандартной библиотеки повышает эффективность разработки."
+          "why_matters": "Понимание протокола итерации необходимо для работы с циклами и генераторами."
         },
         {
           "id": 5,
-          "question": "Что выведет этот код?",
-          "code": "x = 10\nif x > 5:\n    print('A')\nelse:\n    print('B')\n    print('C')",
-          "options": ["A", "A\nB\nC", "B\nC"],
+          "question": "Какая функция в Python используется для вывода текста в консоль?",
+          "code": "",
+          "options": [],
+          "correct_text": "print",
+          "explanation": "Функция print() выводит данные в стандартный поток вывода.",
+          "difficulty": "easy"
+        },
+        {
+          "id": 6,
+          "question": "Вы получаете 'UnboundLocalError: local variable 'counter' referenced before assignment' внутри функции. Проанализируйте механизм работы локальных переменных в Python и объясните, почему возникает эта ошибка, даже если переменная с таким именем существует в глобальной области.",
+          "code": "counter = 0\n\ndef increment():\n    print(counter)  # UnboundLocalError\n    counter += 1\n\nincrement()",
+          "options": [
+            "Присваивание counter += 1 внутри функции делает counter локальной переменной; попытка прочитать её до присваивания вызывает ошибку",
+            "Глобальная переменная counter недоступна внутри функций",
+            "Нужно использовать global counter в начале функции"
+          ],
           "correct": 0,
-          "explanation": "Условие x > 5 истинно, выполняется ветка if. Ветка else полностью игнорируется.",
+          "explanation": "Если в функции есть присваивание переменной (даже через +=), интерпретатор считает её локальной для всей функции. Попытка прочитать её до присваивания вызывает UnboundLocalError. Решение: либо передавать как аргумент, либо использовать global (не рекомендуется), либо пересмотреть архитектуру.",
+          "difficulty": "hard",
+          "why_matters": "Понимание областей видимости и правил связывания переменных критично для избежания скрытых багов."
+        },
+        {
+          "id": 7,
+          "question": "При попытке добавить элемент в список вы получаете 'AttributeError: 'list' object has no attribute 'push''. Проанализируйте методы работы со списками в Python и объясните, почему этот метод не существует, и как правильно добавлять элементы в конец списка.",
+          "code": "items = []\nitems.push('new_item')  # AttributeError",
+          "options": [
+            "В Python метод добавления элемента в конец списка называется append(), а не push(); push() существует в других языках (JavaScript, C++)",
+            "Нужно импортировать модуль collections",
+            "Списки в Python не поддерживают добавление элементов"
+          ],
+          "correct": 0,
+          "explanation": "Python следует своей философии: для списков используется append() для добавления в конец, insert() для вставки по индексу. Метод push() заимствован из других языков и в Python отсутствует.",
+          "difficulty": "easy",
+          "why_matters": "Знание стандартной библиотеки и идиом языка повышает эффективность разработки."
+        },
+        {
+          "id": 8,
+          "question": "Вы получаете 'KeyError: 'email'' при обращении к словарю. Проанализируйте возможные причины и предложите безопасные способы доступа к значениям словаря в Python, учитывая обработку отсутствующих ключей.",
+          "code": "user = {'name': 'Alice', 'age': 30}\nprint(user['email'])  # KeyError",
+          "options": [
+            "Ключ 'email' отсутствует в словаре; безопасные способы: user.get('email'), user.get('email', 'default'), или проверка 'if 'email' in user'",
+            "Нужно преобразовать словарь в список",
+            "Ошибка в синтаксисе — нужно использовать двойные кавычки"
+          ],
+          "correct": 0,
+          "explanation": "Прямое обращение по несуществующему ключу вызывает KeyError. Метод get() возвращает None или значение по умолчанию, что безопаснее. Также можно использовать in для проверки наличия ключа.",
           "difficulty": "medium",
-          "why_matters": "Понимание потока управления необходимо для отладки логики."
+          "why_matters": "Безопасная работа с данными — основа надёжного приложения."
+        },
+        {
+          "id": 9,
+          "question": "При обращении к элементу списка по индексу возникает 'IndexError: list index out of range'. Проанализируйте механизм индексации в Python и объясните, как избежать этой ошибки при работе со списками динамической длины.",
+          "code": "data = [10, 20, 30]\nprint(data[5])  # IndexError",
+          "options": [
+            "Индекс 5 выходит за границы списка (допустимые индексы: 0..2); решения: проверка len(data), использование срезов, или обработка исключения",
+            "Список нужно отсортировать перед доступом",
+            "Нужно использовать отрицательные индексы"
+          ],
+          "correct": 0,
+          "explanation": "Индексы в Python начинаются с 0 и заканчиваются len(list)-1. Доступ за границы вызывает IndexError. Рекомендуется проверять длину списка или использовать try-except для обработки граничных случаев.",
+          "difficulty": "easy",
+          "why_matters": "Работа с индексами — базовый навык, ошибки в котором приводят к сбоям приложения."
+        },
+        {
+          "id": 10,
+          "question": "Вы получаете 'ZeroDivisionError' при выполнении арифметической операции. Проанализируйте контекст возникновения этой ошибки и предложите стратегии предотвращения деления на ноль в производственном коде, учитывая обработку пользовательского ввода и внешних данных.",
+          "code": "def calculate_ratio(numerator, denominator):\n    return numerator / denominator  # ZeroDivisionError при denominator=0",
+          "options": [
+            "Проверять знаменатель перед делением (if denominator != 0), использовать try-except для обработки ZeroDivisionError, или возвращать Optional/None при недопустимых входных данных",
+            "Использовать целочисленное деление // вместо /",
+            "Запретить пользователю вводить ноль на уровне интерфейса"
+          ],
+          "correct": 0,
+          "explanation": "Деление на ноль математически не определено и вызывает исключение в Python. В продакшене рекомендуется комбинировать валидацию входных данных, обработку исключений и возврат безопасных значений (None, Optional) для повышения устойчивости системы.",
+          "difficulty": "medium",
+          "why_matters": "Обработка граничных случаев и ошибок ввода — критически важный аспект надёжности ПО."
         }
       ],
       "unlock_threshold": 0.8,
@@ -81,83 +166,165 @@
     {
       "id": 2,
       "language": "Python",
-      "title": "Исключения и отладка: от базовой обработки до продвинутых паттернов",
+      "title": "Исключения и отладка в Python: от базовой обработки до продвинутых паттернов",
       "description": "try-except, traceback, logging, контекстные менеджеры",
       "terms": [
         {
           "term": "Stack trace",
-          "definition": "Последовательность вызовов функций, приведших к исключению",
-          "example": "Traceback (most recent call last):\n  File 'main.py', line 15\n    result = process(data)\nKeyError: 'key'"
+          "definition": "Последовательность вызовов функций, приведших к возникновению исключения. Содержит имена файлов, номера строк и имена функций. Критически важен для отладки.",
+          "example": "Traceback (most recent call last):\n  File \"main.py\", line 15, in <module>\n    result = process(data)\n  File \"utils.py\", line 8, in process\n    return data['key']\nKeyError: 'key'"
         },
         {
           "term": "Context manager",
-          "definition": "Объект с методами __enter__ и __exit__ для управления ресурсами",
-          "example": "with open('file.txt') as f:\n    data = f.read()"
+          "definition": "Объект, определяющий методы __enter__ и __exit__, используемый в конструкции with для автоматического управления ресурсами (файлы, соединения, блокировки).",
+          "example": "with open('file.txt') as f:\n    data = f.read()\n# Файл автоматически закроется, даже если возникнет исключение"
         },
         {
           "term": "Logging levels",
-          "definition": "Уровни логирования: DEBUG, INFO, WARNING, ERROR, CRITICAL",
-          "example": "logging.warning('Low disk space')\nlogging.error('DB connection failed')"
+          "definition": "Уровни логирования в Python: DEBUG, INFO, WARNING, ERROR, CRITICAL. Позволяют фильтровать сообщения по важности.",
+          "example": "logging.warning('Low disk space')\nlogging.error('Database connection failed')"
         }
       ],
       "tasks": [
         {
-          "id": 6,
-          "question": "Чем отличается traceback.print_exc() от print(e)?",
-          "code": "try:\n    risky_operation()\nexcept Exception as e:\n    # print(e) vs traceback.print_exc()",
+          "id": 11,
+          "question": "Вы вызываете 'traceback.print_exc()' внутри блока except. Проанализируйте, какую информацию выводит эта функция, в каких сценариях её использование предпочтительнее простого print(e), и как это влияет на процесс отладки в производственной среде.",
+          "code": "import traceback\n\ntry:\n    risky_operation()\nexcept Exception as e:\n    traceback.print_exc()\n    # vs. print(e)",
           "options": [
-            "print_exc() выводит полный стек вызовов с файлами и строками; print(e) только сообщение",
+            "print_exc() выводит полный стек вызовов (traceback) с именами файлов, строками и функциями, что критично для локализации ошибки; print(e) показывает только сообщение об исключении",
             "Обе функции выводят одинаковую информацию",
-            "print_exc() работает только с SyntaxError"
+            "print_exc() работает только с определёнными типами исключений"
           ],
           "correct": 0,
-          "explanation": "traceback.print_exc() показывает цепочку вызовов, что критично для локализации ошибки в больших проектах.",
+          "explanation": "traceback.print_exc() выводит полную трассировку стека, включая цепочку вызовов, что позволяет точно определить, где и почему произошла ошибка. print(e) показывает только сообщение, что часто недостаточно для отладки сложных систем.",
           "difficulty": "medium",
-          "why_matters": "Эффективная отладка экономит часы разработки."
+          "why_matters": "Эффективная отладка экономит часы разработки и снижает время простоя продакшена."
         },
         {
-          "id": 7,
-          "question": "Какое исключение безопасно перехватывать для обработки всех пользовательских ошибок?",
-          "code": "try:\n    main_logic()\nexcept ____ as e:\n    handle(e)",
-          "options": [],
-          "correct_text": "Exception",
-          "explanation": "except Exception перехватывает все пользовательские исключения, но пропускает системные (KeyboardInterrupt, SystemExit), что безопасно.",
-          "difficulty": "medium",
-          "why_matters": "Неправильная обработка исключений может сделать программу неотключаемой."
-        },
-        {
-          "id": 8,
-          "question": "Почему конструкция with предпочтительнее ручного open/close?",
-          "code": "# Вариант А\nf = open('data.txt')\ndata = f.read()\nf.close()\n# Вариант Б\nwith open('data.txt') as f:\n    data = f.read()",
+          "id": 12,
+          "question": "Вы хотите перехватить любое исключение в блоке try. Проанализируйте разницу между 'except Exception as e' и 'bare except' (except:), их влияние на обработку системных исключений (KeyboardInterrupt, SystemExit) и рекомендации PEP 8 по использованию этих конструкций.",
+          "code": "try:\n    main_logic()\nexcept Exception as e:  # Вариант А\n    handle(e)\n\n# vs.\n\ntry:\n    main_logic()\nexcept:  # Вариант Б (bare except)\n    handle()",
           "options": [
-            "with автоматически вызывает __exit__, закрывая файл даже при исключении",
-            "with работает только с текстовыми файлами",
-            "Оба варианта полностью эквивалентны"
+            "except Exception перехватывает только пользовательские исключения, позволяя системе обрабатывать KeyboardInterrupt; bare except перехватывает всё, включая системные сигналы, что может сделать программу неотключаемой",
+            "bare except быстрее работает",
+            "except Exception устарел и не рекомендуется"
           ],
           "correct": 0,
-          "explanation": "Контекстный менеджер гарантирует освобождение ресурса независимо от того, завершился блок нормально или с ошибкой.",
-          "difficulty": "easy",
-          "why_matters": "Автоматическое управление ресурсами — основа надёжного кода."
+          "explanation": "PEP 8 рекомендует избегать bare except, так как он перехватывает даже SystemExit и KeyboardInterrupt, мешая корректному завершению программы. except Exception — более безопасный выбор, если нужно обработать все пользовательские ошибки.",
+          "difficulty": "hard",
+          "why_matters": "Неправильная обработка исключений может привести к зависанию приложения или невозможности его остановить."
         },
         {
-          "id": 9,
-          "question": "Какой метод логирования автоматически добавляет traceback к сообщению?",
-          "code": "try:\n    db_query()\nexcept Exception:\n    logging.____('Database error')",
-          "options": [],
-          "correct_text": "exception",
-          "explanation": "logging.exception() — это logging.error() с exc_info=True по умолчанию, что добавляет полную трассировку стека.",
-          "difficulty": "medium",
-          "why_matters": "Полные логи ускоряют диагностику проблем в продакшене."
-        },
-        {
-          "id": 10,
-          "question": "Что произойдёт при выполнении этого кода?",
-          "code": "try:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print('A')\nfinally:\n    print('B')",
-          "options": ["A\nB", "A", "B\nA"],
+          "id": 13,
+          "question": "Вы используете блок finally для освобождения ресурсов. Проанализируйте, в каких сценариях finally гарантированно выполнится, а в каких — нет, и как это соотносится с использованием контекстных менеджеров (with) для управления ресурсами.",
+          "code": "f = None\ntry:\n    f = open('data.txt')\n    process(f)\nfinally:\n    if f:\n        f.close()  # Гарантированно ли закроется файл?",
+          "options": [
+            "finally выполнится всегда, кроме случаев os._exit() или краха интерпретатора; however, контекстный менеджер with предпочтительнее, так как он короче, безопаснее и автоматически обрабатывает исключения",
+            "finally не выполнится, если в try возникнет исключение",
+            "with и finally полностью эквивалентны"
+          ],
           "correct": 0,
-          "explanation": "finally выполняется всегда, независимо от того, было исключение или нет. Порядок: except → finally.",
+          "explanation": "finally выполняется почти всегда, но with предпочтительнее: он короче, автоматически закрывает ресурс и обрабатывает исключения. with — идиоматичный способ работы с файлами, соединениями и другими ресурсами в Python.",
           "difficulty": "medium",
-          "why_matters": "Точное управление потоком выполнения делает код предсказуемым."
+          "why_matters": "Правильное управление ресурсами предотвращает утечки и повышает надёжность приложения."
+        },
+        {
+          "id": 14,
+          "question": "Вы хотите получить человекочитаемое сообщение об ошибке внутри except. Проанализируйте различные способы извлечения информации из объекта исключения (str(e), e.args, repr(e)) и объясните, в каких сценариях каждый из них наиболее уместен.",
+          "code": "try:\n    int('invalid')\nexcept ValueError as e:\n    # Как лучше получить сообщение?",
+          "options": [
+            "str(e) возвращает человекочитаемое сообщение; e.args — кортеж аргументов исключения; repr(e) — представление для отладки. Для логирования пользователю подходит str(e), для отладки — repr(e) или traceback",
+            "Только e.message работает (устаревший атрибут)",
+            "Нужно использовать logging.exception() без доступа к атрибутам"
+          ],
+          "correct": 0,
+          "explanation": "str(e) — стандартный способ получения сообщения. e.args содержит аргументы, переданные при создании исключения. repr(e) полезен для отладки, так как показывает тип и состояние объекта. logging.exception() автоматически добавляет traceback.",
+          "difficulty": "medium",
+          "why_matters": "Качественное логирование ускоряет диагностику проблем в продакшене."
+        },
+        {
+          "id": 15,
+          "question": "Вы используете 'bare except' (except:) для перехвата всех исключений. Проанализируйте, почему это считается антипаттерном в Python, какие системные исключения могут быть случайно перехвачены, и как это влияет на отладку и завершение программы.",
+          "code": "try:\n    main()\nexcept:\n    print('Error occurred')  # bare except",
+          "options": [
+            "bare except перехватывает даже KeyboardInterrupt (Ctrl+C) и SystemExit, делая программу неотключаемой; также скрывает тип ошибки, усложняя отладку",
+            "bare except быстрее работает",
+            "Это рекомендуемый способ обработки ошибок в Python"
+          ],
+          "correct": 0,
+          "explanation": "bare except нарушает принцип явности и может привести к тому, что программа не отреагирует на сигналы завершения. PEP 8 рекомендует явно указывать типы исключений или использовать except Exception.",
+          "difficulty": "hard",
+          "why_matters": "Следование лучшим практикам повышает надёжность и поддерживаемость кода."
+        },
+        {
+          "id": 16,
+          "question": "Вы хотите выбросить пользовательское исключение с кастомным сообщением. Проанализируйте синтаксис создания и выброса исключений в Python, иерархию классов исключений и рекомендации по проектированию собственных типов ошибок.",
+          "code": "def validate_age(age):\n    if age < 0:\n        # Как правильно выбросить исключение?",
+          "options": [
+            "raise ValueError('Age cannot be negative') — стандартный способ; для кастомных исключений создать класс, наследующий Exception",
+            "Использовать error('message')",
+            "Выбрасывать строку напрямую: raise 'Error'"
+          ],
+          "correct": 0,
+          "explanation": "В Python исключения выбрасываются через raise с объектом, наследующим Exception. Стандартные исключения (ValueError, TypeError) предпочтительны для типовых ошибок. Кастомные исключения полезны для бизнес-логики.",
+          "difficulty": "easy",
+          "why_matters": "Чёткая иерархия исключений упрощает обработку ошибок и делает код самодокументируемым."
+        },
+        {
+          "id": 17,
+          "question": "Вы используете 'logging.exception()' внутри except-блока. Проанализируйте, чем этот метод отличается от logging.error(), в каких сценариях его использование обязательно, и как он влияет на формат логов в производственной системе.",
+          "code": "import logging\n\ntry:\n    db_query()\nexcept Exception:\n    logging.exception('Database error')  # vs logging.error",
+          "options": [
+            "logging.exception() автоматически добавляет traceback к сообщению, что критично для отладки; logging.error() выводит только сообщение без стека",
+            "Оба метода идентичны",
+            "logging.exception() работает только с определёнными типами исключений"
+          ],
+          "correct": 0,
+          "explanation": "logging.exception() — это logging.error() с exc_info=True по умолчанию, что добавляет полную трассировку стека. Это обязательно для логирования необработанных исключений в продакшене.",
+          "difficulty": "medium",
+          "why_matters": "Полные логи с трассировкой позволяют быстро диагностировать и исправлять ошибки в работающей системе."
+        },
+        {
+          "id": 18,
+          "question": "Вы хотите обработать несколько типов исключений в одном блоке. Проанализируйте синтаксис multi-catch в Python (except (Type1, Type2)), его отличия от множественных except-блоков и рекомендации по группировке исключений для повышения читаемости кода.",
+          "code": "try:\n    parse_data(input)\nexcept (ValueError, TypeError) as e:  # Multi-catch\n    handle_parse_error(e)",
+          "options": [
+            "except (Type1, Type2) позволяет обработать несколько исключений одним блоком; предпочтительно, когда логика обработки одинакова; иначе лучше использовать отдельные блоки для ясности",
+            "Multi-catch не поддерживается в Python",
+            "Нужно всегда использовать отдельные except-блоки"
+          ],
+          "correct": 0,
+          "explanation": "Multi-catch (except (A, B)) допустим и полезен, когда обработка одинакова. Если логика разная — лучше отдельные блоки. Это вопрос читаемости, а не функциональности.",
+          "difficulty": "easy",
+          "why_matters": "Читаемый код проще поддерживать и расширять."
+        },
+        {
+          "id": 19,
+          "question": "Вы используете блок else в конструкции try-except-else-finally. Проанализируйте, в каких сценариях выполнение попадает в else, как это соотносится с обработкой исключений и возвратом значений, и почему else может быть предпочтительнее размещения кода в конце try.",
+          "code": "try:\n    result = risky_operation()\nexcept ValueError:\n    handle_error()\nelse:\n    use_result(result)  # Когда выполнится этот блок?",
+          "options": [
+            "else выполнится, только если в try не возникло исключения; это позволяет отделить код, зависящий от успешного выполнения, от кода, который может вызвать исключение",
+            "else выполнится всегда после try",
+            "else и finally — это одно и то же"
+          ],
+          "correct": 0,
+          "explanation": "Блок else выполняется только при отсутствии исключений в try. Это полезно, чтобы не оборачивать лишний код в try, который сам не должен вызывать обрабатываемые исключения.",
+          "difficulty": "medium",
+          "why_matters": "Точное управление потоком выполнения делает код более предсказуемым и тестируемым."
+        },
+        {
+          "id": 20,
+          "question": "Вы хотите сохранить оригинальный traceback при повторном выбросе исключения внутри except-блока. Проанализируйте разницу между 'raise', 'raise e' и 'raise NewException() from e', и объясните, как каждый из них влияет на цепочку исключений и отладку.",
+          "code": "try:\n    primary_operation()\nexcept Exception as e:\n    log_error(e)\n    # Как правильно перевыбросить?",
+          "options": [
+            "raise без аргументов сохраняет оригинальный traceback; raise e создаёт новый контекст; raise NewException() from e создаёт цепочку исключений (exception chaining) для отладки",
+            "Все три варианта идентичны",
+            "Нельзя перевыбрасывать исключения в Python"
+          ],
+          "correct": 0,
+          "explanation": "raise (без аргументов) пере-выбрасывает текущее исключение с сохранением оригинального стека. raise e создаёт новый контекст, теряя часть информации. raise X from e явно указывает причину, что полезно для отладки сложных ошибок.",
+          "difficulty": "hard",
+          "why_matters": "Правильная обработка цепочек исключений критична для диагностики ошибок в многоуровневых системах."
         }
       ],
       "unlock_threshold": 0.8,
@@ -172,258 +339,90 @@
       "terms": [
         {
           "term": "Path traversal",
-          "definition": "Уязвимость доступа к файлам за пределами разрешённой директории",
-          "example": "user_input = '../../etc/passwd'\nopen(f'/safe/{user_input}')  # Уязвимо!"
+          "definition": "Уязвимость, позволяющая злоумышленнику получить доступ к файлам за пределами разрешённой директории путём манипуляции с путями (например, '../../../etc/passwd').",
+          "example": "user_input = '../../etc/passwd'\nwith open(f'/safe/dir/{user_input}')  # Уязвимо!"
         },
         {
           "term": "File descriptor",
-          "definition": "Числовой идентификатор открытого файла/сокета в ОС",
-          "example": "fd = os.open('file.txt', os.O_RDONLY)"
+          "definition": "Неотрицательное целое число, используемое ОС для идентификации открытого файла, сокета или другого ресурса ввода-вывода.",
+          "example": "fd = os.open('file.txt', os.O_RDONLY)\nos.read(fd, 1024)\nos.close(fd)"
         },
         {
-          "term": "EAFP",
-          "definition": "Easier to Ask for Forgiveness than Permission — философия Python",
-          "example": "try:\n    with open('file.txt') as f: ...\nexcept FileNotFoundError: ..."
-        }
-      ],
-      "tasks": [
-        {
-          "id": 11,
-          "question": "Как безопасно проверить существование файла перед открытием?",
-          "code": "import os\npath = 'config.json'\nif os.path.____(path):\n    with open(path) as f: ...",
-          "options": [],
-          "correct_text": "exists",
-          "explanation": "os.path.exists() возвращает True, если файл или директория существует. В Python чаще используют EAFP (try/except).",
-          "difficulty": "easy",
-          "why_matters": "Надёжная работа с файловой системой критична для стабильности приложения."
-        },
-        {
-          "id": 12,
-          "question": "Почему возникает PermissionError при записи в /var/log/app.log?",
-          "code": "with open('/var/log/app.log', 'w') as f:\n    f.write('Log entry')",
-          "options": [
-            "Процесс не имеет прав на запись в системную директорию",
-            "Файл уже открыт другим процессом",
-            "Нужно использовать режим 'a' вместо 'w'"
-          ],
-          "correct": 0,
-          "explanation": "Системные директории защищены ОС. Для записи нужны права root или запись в пользовательскую папку.",
-          "difficulty": "medium",
-          "why_matters": "Понимание модели прав доступа необходимо для развёртывания серверов."
-        },
-        {
-          "id": 13,
-          "question": "Как правильно объединить путь к файлу кроссплатформенно?",
-          "code": "folder = '/data'\nfilename = 'report.csv'\npath = os.path.____(folder, filename)",
-          "options": [],
-          "correct_text": "join",
-          "explanation": "os.path.join() автоматически использует правильный разделитель (/ или \\) и корректно обрабатывает абсолютные пути.",
-          "difficulty": "easy",
-          "why_matters": "Кроссплатформенность — важное требование для современного ПО."
-        },
-        {
-          "id": 14,
-          "question": "Что означает ошибка 'Too many open files'?",
-          "code": "for name in filenames:\n    f = open(name)\n    process(f)\n    # f не закрывается!",
-          "options": [
-            "Исчерпан лимит файловых дескрипторов процесса",
-            "Файл слишком большой для памяти",
-            "Нужно использовать буферизированное чтение"
-          ],
-          "correct": 0,
-          "explanation": "ОС ограничивает количество открытых файлов. Утечки возникают, если файлы открываются, но не закрываются.",
-          "difficulty": "hard",
-          "why_matters": "Управление ресурсами критично для долгоживущих серверных приложений."
-        },
-        {
-          "id": 15,
-          "question": "Какой подход предпочтительнее в Python: проверка exists() или try/except?",
-          "code": "# A\nif os.path.exists('file.txt'):\n    with open('file.txt') as f: ...\n# B\ntry:\n    with open('file.txt') as f: ...\nexcept FileNotFoundError: ...",
-          "options": [
-            "B (EAFP) надёжнее, так как исключает race condition между проверкой и открытием",
-            "A (LBYL) всегда безопаснее",
-            "Оба подхода полностью эквивалентны"
-          ],
-          "correct": 0,
-          "explanation": "В многопоточной среде файл может быть удалён между exists() и open(). try/except — атомарная операция.",
-          "difficulty": "hard",
-          "why_matters": "Понимание гонок условий критично для надёжного многопоточного кода."
-        }
-      ],
-      "unlock_threshold": 0.8,
-      "min_questions": 5,
-      "unlocked_by_default": false
-    },
-    {
-      "id": 4,
-      "language": "Python",
-      "title": "Асинхронность и сетевые ошибки: от таймаутов до CORS",
-      "description": "async/await, TimeoutError, SSL, HTTP-статусы",
-      "terms": [
-        {
-          "term": "Event loop",
-          "definition": "Цикл обработки асинхронных операций в asyncio",
-          "example": "asyncio.run(main())  # Запускает event loop"
-        },
-        {
-          "term": "TimeoutError",
-          "definition": "Превышение времени ожидания ответа от ресурса",
-          "example": "requests.get(url, timeout=5)  # TimeoutError"
-        },
-        {
-          "term": "CORS",
-          "definition": "Cross-Origin Resource Sharing — механизм безопасности браузера",
-          "example": "Access to fetch blocked by CORS policy"
-        }
-      ],
-      "tasks": [
-        {
-          "id": 16,
-          "question": "Как правильно обработать таймаут сетевого запроса?",
-          "code": "try:\n    response = requests.get(url, timeout=3)\nexcept ____:\n    handle_timeout()",
-          "options": [],
-          "correct_text": "TimeoutError",
-          "explanation": "TimeoutError возникает, когда сервер не отвечает в заданный промежуток времени. В продакшене добавляют retry-логику.",
-          "difficulty": "medium",
-          "why_matters": "Устойчивость к сетевым сбоям критична для пользовательского опыта."
-        },
-        {
-          "id": 17,
-          "question": "Почему requests не выбрасывает исключение для HTTP 404?",
-          "code": "response = requests.get('https://api.com/missing')\n# response.status_code == 404, но исключения нет",
-          "options": [
-            "requests считает ответ успешным, если сервер ответил; для проверки нужно использовать response.raise_for_status()",
-            "404 не является ошибкой",
-            "Нужно использовать try-except вокруг requests.get()"
-          ],
-          "correct": 0,
-          "explanation": "requests.get() успешно завершается даже для 4xx/5xx. raise_for_status() выбрасывает HTTPError для статусов >=400.",
-          "difficulty": "medium",
-          "why_matters": "Корректная обработка статусов ответа — основа надёжного взаимодействия с API."
-        },
-        {
-          "id": 18,
-          "question": "Как отправить JSON в POST-запросе одной строкой?",
-          "code": "import requests\npayload = {'key': 'value'}\nrequests.____(url, json=payload)",
-          "options": [],
-          "correct_text": "post",
-          "explanation": "Параметр json автоматически сериализует данные и устанавливает заголовок Content-Type: application/json.",
-          "difficulty": "easy",
-          "why_matters": "Правильная сериализация критична для взаимодействия с внешними API."
-        },
-        {
-          "id": 19,
-          "question": "Что означает ошибка SSL: CERTIFICATE_VERIFY_FAILED?",
-          "code": "response = requests.get('https://self-signed.example.com')",
-          "options": [
-            "Сертификат сайта не доверен (самоподписанный/просрочен)",
-            "Нужно использовать http:// вместо https://",
-            "Ошибка в заголовках запроса"
-          ],
-          "correct": 0,
-          "explanation": "SSL-ошибки возникают при проблемах с доверием к сертификату. В продакшене отключение проверки недопустимо.",
-          "difficulty": "hard",
-          "why_matters": "Безопасность соединений критична для защиты данных."
-        },
-        {
-          "id": 20,
-          "question": "Как корректно отменить асинхронную задачу в asyncio?",
-          "code": "task = asyncio.create_task(fetch_data())\ntask.____()\ntry:\n    await task\nexcept asyncio.CancelledError:\n    cleanup()",
-          "options": [],
-          "correct_text": "cancel",
-          "explanation": "cancel() запрашивает отмену; задача должна обработать CancelledError и освободить ресурсы в finally.",
-          "difficulty": "hard",
-          "why_matters": "Безопасная отмена асинхронных операций критична для отзывчивости приложений."
-        }
-      ],
-      "unlock_threshold": 0.8,
-      "min_questions": 5,
-      "unlocked_by_default": false
-    },
-    {
-      "id": 5,
-      "language": "Python",
-      "title": "Многопоточность и race condition: синхронизация и атомарность",
-      "description": "threading, GIL, lock, race condition, atomic operations",
-      "terms": [
-        {
-          "term": "Race condition",
-          "definition": "Результат зависит от неопределённого порядка выполнения потоков",
-          "example": "// Два потока увеличивают counter++ без синхронизации"
-        },
-        {
-          "term": "GIL",
-          "definition": "Global Interpreter Lock — мьютекс, разрешающий выполнение байт-кода одному потоку",
-          "example": "# Многопоточность не ускоряет CPU-bound задачи в Python"
-        },
-        {
-          "term": "Lock",
-          "definition": "Примитив синхронизации для взаимного исключения",
-          "example": "lock = threading.Lock()\nwith lock:\n    shared_resource += 1"
+          "term": "Context manager",
+          "definition": "Объект с методами __enter__ и __exit__, используемый в конструкции with для автоматического управления ресурсами (закрытие файлов, освобождение блокировок).",
+          "example": "with open('data.txt') as f:\n    content = f.read()\n# Файл автоматически закроется"
         }
       ],
       "tasks": [
         {
           "id": 21,
-          "question": "Почему операция counter += 1 не является атомарной в Python?",
-          "code": "counter = 0\ndef increment():\n    global counter\n    counter += 1  # Не атомарно!",
+          "question": "Вы получаете 'FileNotFoundError' при попытке открыть файл. Проанализируйте возможные причины этой ошибки в контексте относительных и абсолютных путей, прав доступа и существования файла, и предложите стратегии безопасной обработки этой ситуации в производственном коде.",
+          "code": "with open('config/settings.json') as f:\n    config = json.load(f)",
           "options": [
-            "Операция состоит из чтения, вычисления и записи; между шагами может переключиться другой поток",
-            "GIL гарантирует атомарность всех операций",
-            "Ошибка в логике — нужно использовать multiprocessing"
+            "Файл не существует по указанному пути; решения: использовать os.path.exists() для проверки, pathlib для работы с путями, или обработку исключения FileNotFoundError с понятным сообщением пользователю",
+            "Нужно использовать абсолютный путь всегда",
+            "Ошибка в кодировке файла — нужно указать encoding='utf-8'"
           ],
           "correct": 0,
-          "explanation": "counter += 1 — это три операции. GIL может переключить поток между ними, приводя к потере обновлений.",
-          "difficulty": "hard",
-          "why_matters": "Понимание неатомарности операций критично для многопоточного кода."
+          "explanation": "FileNotFoundError возникает, когда файл не найден по указанному пути. В продакшене рекомендуется комбинировать валидацию путей (pathlib), проверку существования и обработку исключений с логированием для удобства отладки.",
+          "difficulty": "medium",
+          "why_matters": "Надёжная работа с файловой системой критична для стабильности приложения и безопасности данных."
         },
         {
           "id": 22,
-          "question": "Какой примитив синхронизации используется для взаимного исключения?",
-          "code": "____ = threading.____()\nwith ____:\n    shared_resource += 1",
-          "options": [],
-          "correct_text": "lock",
-          "explanation": "Lock гарантирует, что только один поток выполняет критическую секцию одновременно.",
+          "question": "Вы хотите безопасно открыть файл для чтения в Python. Проанализируйте преимущества конструкции with перед ручным управлением файлами (open/close), и объясните, как контекстный менеджер гарантирует освобождение ресурсов даже при возникновении исключений.",
+          "code": "# Вариант А (небезопасный)\nf = open('data.txt')\ndata = f.read()\nf.close()\n\n# Вариант Б (безопасный)\nwith open('data.txt') as f:\n    data = f.read()",
+          "options": [
+            "with автоматически вызывает __exit__, который закрывает файл даже при исключении; ручной close() может не выполниться, если произойдёт ошибка до него",
+            "Оба варианта полностью эквивалентны",
+            "with работает только с текстовыми файлами"
+          ],
+          "correct": 0,
+          "explanation": "Контекстный менеджер гарантирует вызов __exit__ (закрытие файла) независимо от того, завершился ли блок нормально или с исключением. Это предотвращает утечки ресурсов и делает код короче и безопаснее.",
           "difficulty": "easy",
-          "why_matters": "Правильный выбор примитива упрощает код и предотвращает взаимные блокировки."
+          "why_matters": "Автоматическое управление ресурсами — основа надёжного и поддерживаемого кода."
         },
         {
           "id": 23,
-          "question": "Почему threading не ускоряет CPU-bound задачи в Python?",
-          "code": "# Многопоточность для вычислений",
+          "question": "Вы обрабатываете пользовательский ввод для формирования пути к файлу. Проанализируйте уязвимость path traversal, её потенциальные последствия для безопасности приложения, и предложите стратегии защиты от этой атаки в Python.",
+          "code": "user_file = request.args.get('filename')\nwith open(f'/uploads/{user_file}') as f:  # Уязвимо!",
           "options": [
-            "GIL позволяет выполнять байт-код только одному потоку одновременно",
-            "threading всегда быстрее multiprocessing",
-            "GIL отключается автоматически для CPU-bound задач"
+            "Злоумышленник может ввести '../../etc/passwd' и прочитать системные файлы; защита: валидация имени файла, использование os.path.basename(), запрет символов '/', '\\', и работа в sandbox-директории",
+            "Path traversal невозможен в Python",
+            "Достаточно использовать with для защиты"
           ],
           "correct": 0,
-          "explanation": "Для CPU-bound задач multiprocessing обходит GIL через отдельные процессы с собственным GIL.",
-          "difficulty": "medium",
-          "why_matters": "Понимание модели выполнения Python необходимо для выбора стратегии параллелизма."
+          "explanation": "Path traversal — серьёзная уязвимость, позволяющая читать произвольные файлы на сервере. Защита требует комбинации валидации ввода, нормализации путей и ограничения доступа к определённой директории.",
+          "difficulty": "hard",
+          "why_matters": "Безопасность файловой системы — критический аспект любого веб-приложения."
         },
         {
           "id": 24,
-          "question": "Какой подход оптимален для высоконагруженного I/O в Python?",
-          "code": "# Тысячи сетевых соединений",
+          "question": "Вы получаете 'PermissionError' при попытке записать файл. Проанализируйте возможные причины этой ошибки в контексте прав доступа ОС, владельца файла и контекста выполнения программы, и предложите стратегии обработки этой ситуации.",
+          "code": "with open('/var/log/app.log', 'w') as f:\n    f.write('Log entry')  # PermissionError",
           "options": [
-            "asyncio — для асинхронного I/O с множеством соединений в одном потоке",
-            "threading — для параллельных вычислений",
-            "multiprocessing — для высоконагруженного I/O"
+            "Процесс не имеет прав на запись в указанную директорию; решения: запуск от нужного пользователя, изменение прав на директорию (chmod), или запись в пользовательскую директорию с последующим перемещением",
+            "Нужно использовать режим 'a' вместо 'w'",
+            "Ошибка в кодировке — нужно указать encoding='utf-8'"
           ],
           "correct": 0,
-          "explanation": "asyncio эффективно управляет тысячами соединений без overhead потоков/процессов.",
+          "explanation": "PermissionError возникает, когда ОС запрещает операцию из-за недостаточных прав. В продакшене рекомендуется запускать приложение с минимально необходимыми привилегиями и обрабатывать такие ошибки с понятными сообщениями.",
           "difficulty": "medium",
-          "why_matters": "Оптимальное использование ресурсов — ключ к масштабируемости."
+          "why_matters": "Понимание модели прав доступа ОС необходимо для развёртывания и отладки серверных приложений."
         },
         {
           "id": 25,
-          "question": "Как безопасно выполнить операцию в ThreadPoolExecutor?",
-          "code": "with ThreadPoolExecutor(max_workers=4) as executor:\n    futures = [executor.____(task, arg) for arg in args]",
-          "options": [],
-          "correct_text": "submit",
-          "explanation": "submit() ставит задачу в очередь и возвращает Future для получения результата.",
-          "difficulty": "easy",
-          "why_matters": "Использование высокоуровневых абстракций повышает надёжность многопоточного кода."
+          "question": "Вы хотите проверить существование файла перед его открытием. Проанализируйте философию EAFP (Easier to Ask for Forgiveness than Permission) в Python и объясните, почему часто предпочтительнее обработать исключение, чем предварительно проверять условие.",
+          "code": "# LBYL (Look Before You Leap)\nif os.path.exists('file.txt'):\n    with open('file.txt') as f: ...\n\n# EAFP\ntry:\n    with open('file.txt') as f: ...\nexcept FileNotFoundError: ...",
+          "options": [
+            "EAFP предпочтительнее в Python, так как проверка exists() не гарантирует, что файл не будет удалён или изменён до момента открытия (race condition); обработка исключения атомарна и надёжнее",
+            "LBYL всегда безопаснее, потому что предотвращает исключения",
+            "Оба подхода полностью эквивалентны"
+          ],
+          "correct": 0,
+          "explanation": "В многопоточной или многопроцессной среде между проверкой exists() и открытием файла состояние может измениться (TOCTOU-уязвимость). Обработка исключения — атомарная операция, что делает EAFP более надёжным подходом в Python.",
+          "difficulty": "hard",
+          "why_matters": "Понимание гонок условий (race conditions) критично для написания надёжного многопоточного кода."
         },
         {
           "id": 26,
