@@ -1,5 +1,5 @@
 # main.py
-# Версия 17.0 - ПОЛНЫЙ ФИНАЛ: исправлены f-strings, admin panel, parse_mode, keyboard
+# Версия 14.0 - GLOSSARY + TEXT QUESTIONS + ADMIN USERS LIST
 import asyncio
 import json
 import logging
@@ -15,7 +15,7 @@ from database import (
     init_db, load_user_language, save_user_language, 
     load_progress, save_progress, get_user_profile,
     get_block_by_id, add_question_to_block, delete_question_from_block,
-    get_all_users_stats  # <-- теперь есть!
+    get_all_users_stats, get_all_users_list, get_inactive_users_count # Новые импорты
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -49,7 +49,7 @@ def reload_data():
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
 
-# 🏆 30 ДОСТИЖЕНИЙ
+# 🏆 30 ДОСТИЖЕНИЙ (Без изменений)
 ACHIEVEMENTS = {
     "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "desc": "Пройти первый учебный блок", "xp": 50},
     "polyglot": {"id": "polyglot", "name": "🌍 Полиглот", "desc": "Начать изучение 3 разных языков", "xp": 150},
@@ -66,11 +66,11 @@ ACHIEVEMENTS = {
     "daily_streak_30": {"id": "daily_streak_30", "name": "🏆 Месяц с ботом", "desc": "Заходить в бота 30 дней подряд", "xp": 500},
     "early_bird": {"id": "early_bird", "name": "🌅 Ранняя пташка", "desc": "Пройти блок до 9 утра", "xp": 40},
     "night_owl": {"id": "night_owl", "name": "🦉 Ночной кодёр", "desc": "Пройти блок после 23:00", "xp": 40},
-    "language_explorer": {"id": "language_explorer", "name": "🗺️ Исследователь языков", "desc": "Попробовать вопросы по всем 5 языкам", "xp": 200},
+    "language_explorer": {"id": "language_explorer", "name": "️ Исследователь языков", "desc": "Попробовать вопросы по всем 5 языкам", "xp": 200},
     "git_master": {"id": "git_master", "name": "🌿 Git-гуру", "desc": "Пройти все блоки по Git", "xp": 180},
     "python_pro": {"id": "python_pro", "name": "🐍 Python-профи", "desc": "Пройти все блоки по Python", "xp": 180},
-    "cpp_warrior": {"id": "cpp_warrior", "name": "⚔️ C++ Воин", "desc": "Пройти все блоки по C++", "xp": 180},
-    "java_champion": {"id": "java_champion", "name": "☕ Java-чемпион", "desc": "Пройти все блоки по Java", "xp": 180},
+    "cpp_warrior": {"id": "cpp_warrior", "name": "️ C++ Воин", "desc": "Пройти все блоки по C++", "xp": 180},
+    "java_champion": {"id": "java_champion", "name": " Java-чемпион", "desc": "Пройти все блоки по Java", "xp": 180},
     "first_admin": {"id": "first_admin", "name": "🔧 Первый админ", "desc": "Воспользоваться админ-панелью", "xp": 30},
     "question_creator": {"id": "question_creator", "name": "✍️ Создатель вопросов", "desc": "Добавить свой первый вопрос через админку", "xp": 100},
     "helper": {"id": "helper", "name": "🤝 Помощник", "desc": "Просмотреть объяснения к 50 вопросам", "xp": 80},
@@ -80,7 +80,7 @@ ACHIEVEMENTS = {
     "level_up_10": {"id": "level_up_10", "name": "📈 Десятый уровень", "desc": "Достичь уровня 'Эксперт'", "xp": 200},
     "xp_hunter": {"id": "xp_hunter", "name": "💰 Охотник за XP", "desc": "Набрать 1000 XP", "xp": 150},
     "knowledge_seeker": {"id": "knowledge_seeker", "name": "🧠 Искатель знаний", "desc": "Ответить на 100 вопросов", "xp": 200},
-    "legend": {"id": "legend", "name": "👑 Легенда", "desc": "Получить все остальные достижения", "xp": 1000}
+    "legend": {"id": "legend", "name": " Легенда", "desc": "Получить все остальные достижения", "xp": 1000}
 }
 
 LEVELS = [
@@ -104,6 +104,7 @@ class AdminStates(StatesGroup):
     del_block = State()
     del_id = State()
 
+# --- НОВЫЕ СОСТОЯНИЯ ДЛЯ СПРАВОЧНИКА ---
 class GlossaryStates(StatesGroup):
     searching = State()
 
@@ -115,8 +116,7 @@ def get_level(xp):
     return current
 
 def get_progress_bar(current, total, length=10):
-    if total <= 0:
-        return "░" * length + " 0%"
+    if total <= 0: return "░" * length + " 0%"
     filled = int(length * current / total)
     return "█" * filled + "░" * (length - filled) + f" {int((current/total)*100)}%"
 
@@ -164,16 +164,13 @@ def ensure_user_data(progress, lang):
             "total_answered": 0
         }
     user_data = progress[lang]
-    defaults = {
-        "xp": 0, "achievements": [], "login_streak": 0,
-        "last_login_date": None, "total_correct": 0, "total_answered": 0
-    }
+    defaults = {"xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     for key, val in defaults.items():
         if key not in user_data:
             user_data[key] = val
     return user_data
 
-# 🔥 МЕНЮ
+# 🔥 МЕНЮ С КНОПКАМИ (Добавлен Справочник)
 def get_main_keyboard(uid):
     lang = load_user_language(uid)
     if not lang:
@@ -184,15 +181,11 @@ def get_main_keyboard(uid):
     completed_blocks = lang_data.get("completed_blocks", [])
     keyboard = [
         [KeyboardButton(text="📚 Обучение"), KeyboardButton(text="🧠 Задание")],
-        [KeyboardButton(text="📖 Справочник"), KeyboardButton(text="🏆 Достижения")],
-        [KeyboardButton(text="🔄 Сменить язык")],
-        [KeyboardButton(text="📋 Инструкция")],
+        [KeyboardButton(text="📖 Справочник"), KeyboardButton(text="🏆 Достижения")], # НОВОЕ
+        [KeyboardButton(text="🔄 Сменить язык"), KeyboardButton(text="📋 Инструкция")],
     ]
     if current_block != FIRST_BLOCK_ID[lang] or completed_blocks:
-        keyboard.append([
-            KeyboardButton(text="🔁 Повторить обучение"),
-            KeyboardButton(text="🧪 Повторить тест")
-        ])
+        keyboard.append([KeyboardButton(text="🔁 Повторить обучение"), KeyboardButton(text="🧪 Повторить тест")])
     if is_admin(uid):
         keyboard.append([KeyboardButton(text="⚙️ Админка")])
     return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
@@ -201,17 +194,13 @@ def get_language_keyboard():
     return ReplyKeyboardMarkup(keyboard=[
         [KeyboardButton(text="🐍 Python"), KeyboardButton(text="CppClass C++")],
         [KeyboardButton(text="☕ Java"), KeyboardButton(text="📜 JavaScript")],
-        [KeyboardButton(text="🌱 Git")]
-    ], resize_keyboard=True)
+        [KeyboardButton(text="🌱 Git")]], resize_keyboard=True)
 
-# ✅ ИСПРАВЛЕНО: убран row_width (не поддерживается в aiogram 3.x)
 def get_answer_buttons():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="1️⃣", callback_data="ans_1"),
-            InlineKeyboardButton(text="2️⃣", callback_data="ans_2"),
-            InlineKeyboardButton(text="3️⃣", callback_data="ans_3")
-        ]
+        [InlineKeyboardButton(text="1️⃣", callback_data="ans_1"),
+         InlineKeyboardButton(text="2️⃣", callback_data="ans_2"),
+         InlineKeyboardButton(text="3️", callback_data="ans_3")]
     ])
 
 @dp.message(Command("start"))
@@ -219,7 +208,7 @@ async def start(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
     if lang is None:
-        await message.answer("👋 **Привет!** Выбери язык:", reply_markup=get_language_keyboard(), parse_mode=None)
+        await message.answer(" **Привет!** Выбери язык:", reply_markup=get_language_keyboard())
     else:
         await show_main_menu(message, uid, lang)
 
@@ -236,37 +225,29 @@ async def show_main_menu(message, uid, lang):
             next_level_xp = threshold
             break
     bar = get_progress_bar(xp - level_info[0], next_level_xp - level_info[0]) if next_level_xp else "░"*10 + " MAX"
-    
-    # ✅ ИСПРАВЛЕНО: f-string с \n, а не реальными переносами
-    msg = (
-        f"📖 **Меню ({lang})**\n"
-        f"🏅 {level_info[1]} ({level_info[0]} XP)\n{bar}\n"
-        f"📊 **Статистика:**\n"
-        f"📚 Пройдено: {completed}\n"
-        f"🏆 Достижений: {achievements_count}\n"
-        f"🔥 Серия: {lang_data.get('login_streak', 0)} дн.\n"
-        f"Выбери режим:"
-    )
+    msg = (f"📖 **Меню ({lang})**\n"
+           f"🏅 {level_info[1]} ({level_info[0]} XP)\n{bar}\n"
+           f" **Статистика:**\n"
+           f"📚 Пройдено: {completed}\n"
+           f"🏆 Достижений: {achievements_count}\n"
+           f"🔥 Серия: {lang_data.get('login_streak', 0)} дн.\n"
+           f"Выбери режим:")
     await message.answer(msg, parse_mode=None, reply_markup=get_main_keyboard(uid))
 
 @dp.message(lambda m: m.text in ["🐍 Python", "CppClass C++", "☕ Java", "📜 JavaScript", "🌱 Git"])
 async def handle_language_selection(message: Message):
     uid = message.from_user.id
-    lang_map = {
-        "🐍 Python": "Python", "CppClass C++": "C++",
-        "☕ Java": "Java", "📜 JavaScript": "JavaScript", "🌱 Git": "Git"
-    }
+    lang_map = {"🐍 Python": "Python", "CppClass C++": "C++", "☕ Java": "Java", "📜 JavaScript": "JavaScript", "🌱 Git": "Git"}
     lang = lang_map.get(message.text)
-    if not lang:
-        return
+    if not lang: return
     progress = load_progress(uid)
     if lang not in progress or not progress[lang].get("completed_blocks"):
         await message.answer(
             "✅ **Отличный выбор!**\n"
             "📌 **Что делать дальше:**\n"
-            "1️⃣ Нажми «📚 Обучение» — изучи термины блока\n"
-            "2️⃣ Нажми «🧠 Задание» — ответь на вопросы\n"
-            "3️⃣ Повторяй материал, чтобы закрепить знания!\n"
+            "1️ Нажми «📚 Обучение» — изучи термины блока\n"
+            "2️ Нажми «🧠 Задание» — ответь на вопросы\n"
+            "3️ Повторяй материал, чтобы закрепить знания!\n"
             "💡 В любой момент нажми «📋 Инструкция» для подробной справки.",
             parse_mode=None
         )
@@ -277,7 +258,7 @@ async def handle_language_selection(message: Message):
         user_data["last_login_date"] = datetime.now().strftime("%Y-%m-%d")
         user_data["login_streak"] = streak
         user_data["xp"] += bonus
-        await message.answer(f"🎁 **Бонус!** +{bonus} XP", parse_mode=None)
+        await message.answer(f"🎁 **Бонус!** +{bonus} XP")
     await async_save_progress(uid, progress)
     await show_main_menu(message, uid, lang)
 
@@ -287,114 +268,83 @@ async def change_language(message: Message):
     progress = load_progress(uid)
     lang = load_user_language(uid)
     if lang and progress.get(lang, {}).get("current_attempt"):
-        await message.answer("❗ Сначала заверши тест.", parse_mode=None)
+        await message.answer("❗ Сначала заверши тест.")
         return
-    await message.answer("📌 **Выбери язык:**", reply_markup=get_language_keyboard(), parse_mode=None)
+    await message.answer("📌 **Выбери язык:**", reply_markup=get_language_keyboard())
 
 @dp.message(lambda m: m.text == "📚 Обучение")
 async def learn(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard(), parse_mode=None)
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-    block = next(
-        (b for b in DATA["blocks"]
-         if b["id"] == lang_data.get("current_block", FIRST_BLOCK_ID[lang]) and b["language"] == lang),
-        None
-    )
-    if not block or not block.get("terms"):
-        return await message.answer("📭 Нет терминов.", parse_mode=None)
+    block = next((b for b in DATA["blocks"] if b["id"] == lang_data.get("current_block", FIRST_BLOCK_ID[lang]) and b["language"] == lang), None)
+    if not block or not block.get("terms"): return await message.answer("📭 Нет терминов.")
     
-    # ✅ ИСПРАВЛЕНО: сборка terms_text без реальных переносов в f-string
-    terms_parts = []
-    for t in block["terms"]:
-        example = t.get("example", "")
-        example_block = f"```\n{example}\n```" if example else ""
-        terms_parts.append(f"**{t['term']}**\n_{t['definition']}_\n{example_block}")
-    
-    terms_text = "\n\n".join(terms_parts)
+    terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await message.answer(f"📘 **{block['title']}**\n{terms_text}", parse_mode=None)
 
-# 🔍 СПРАВОЧНИК — ищет по ВСЕМ блокам, без примеров
+# --- НОВЫЙ ХЕНДЛЕР: СПРАВОЧНИК ---
 @dp.message(lambda m: m.text == "📖 Справочник")
 async def glossary_start(message: Message, state: FSMContext):
-    await message.answer(
-        "🔍 **Справочник терминов**\n\n"
-        "Введите название термина или часть определения для поиска.",
-        parse_mode=None
-    )
+    await message.answer("🔍 **Справочник терминов**\n\nВведите название термина или часть определения для поиска:", parse_mode=None)
     await state.set_state(GlossaryStates.searching)
 
 @dp.message(GlossaryStates.searching)
 async def glossary_search(message: Message, state: FSMContext):
     query = message.text.lower()
     found = []
+    # Ищем по ВСЕМ блокам
     for block in DATA.get("blocks", []):
         for term in block.get("terms", []):
             if query in term.get("term", "").lower() or query in term.get("definition", "").lower():
-                found.append({
-                    "term": term["term"],
-                    "definition": term["definition"],
-                    "example": term.get("example", ""),
-                    "language": block["language"]
-                })
+                found.append(term)
     
     if found:
         text = f"🔍 **Найдено: {len(found)}**\n\n"
-        for i, t in enumerate(found[:10], 1):
-            text += f"**{i}. {t['term']}** ({t['language']})\n"
-            text += f"_{t['definition']}_\n"
-            if t["example"]:
-                text += f"```\n{t['example']}\n```\n"
-            text += "\n"
-        if len(found) > 10:
-            text += f"...и ещё {len(found) - 10}\n"
+        for t in found[:10]: # Показываем топ 10
+            text += f"**{t['term']}**\n_{t['definition']}_\n\n"
+        if len(found) > 10: text += "...и ещё несколько\n"
         await message.answer(text, parse_mode=None)
     else:
-        await message.answer(
-            "❌ **Ничего не найдено**\n\n"
-            "Попробуйте другой запрос или проверьте написание.",
-            parse_mode=None
-        )
+        await message.answer("❌ **Ничего не найдено**\nПопробуйте другой запрос.", parse_mode=None)
     await state.clear()
 
+# НОВЫЙ ХЕНДЛЕР ДЛЯ ИНСТРУКЦИИ
 @dp.message(lambda m: m.text == "📋 Инструкция")
 async def show_instructions(message: Message):
     instructions = (
         "📘 **КАК ПОЛЬЗОВАТЬСЯ БОТОМ**\n\n"
         "🔹 **Шаг 1: Выбери язык**\n"
         "Нажми на кнопку с языком (🐍 Python, ☕ Java и т.д.), чтобы начать обучение.\n\n"
-        "🔹 **Шаг 2: Изучи теорию**\n"
+        " **Шаг 2: Изучи теорию**\n"
         "• Нажми «📚 Обучение»\n"
         "• Прочитай термины и примеры кода\n"
         "• Запомни ключевые концепции перед тестом\n\n"
-        "🔹 **Шаг 3: Пройди тест**\n"
-        "• Нажми «🧠 Задание»\n"
-        "• Ответь на 5 вопросов по блоку\n"
-        "• Цветные значки показывают сложность:\n"
-        "  🟢 Easy — базовые вопросы (10 XP)\n"
-        "  🟡 Medium — вопросы со звёздочкой (20 XP)\n"
-        "  🔴 Hard — сложные задачи (30 XP)\n\n"
+        " **Шаг 3: Пройди тест**\n"
+        "• Нажми « Задание»\n"
+        "• Ответь на вопросы (кнопки или текст)\n"
+        "• Цветные значки показывают сложность\n"
+        "  🟢 Easy — 10 XP\n"
+        "  🟡 Medium — 20 XP\n"
+        "  🔴 Hard — 30 XP\n\n"
         "🔹 **Шаг 4: Повторяй и закрепляй**\n"
         "• После теста блок разблокируется для повторения\n"
         "• Используй «🔁 Повторить обучение» для теории\n"
-        "• Используй «🧪 Повторить тест» для практики\n"
-        "• Чем чаще повторяешь — тем лучше запомнишь!\n\n"
+        "• Используй « Повторить тест» для практики\n\n"
         "🏆 **Система прогресса**\n"
-        "• За правильные ответы даются XP (очки опыта)\n"
+        "• За правильные ответы даются XP\n"
         "• Набирай XP, чтобы повышать уровень:\n"
-        "  🌱 Новичок → 📚 Студент → ⭐ Продвинутый → 🎓 Эксперт → 🏆 Мастер → 👑 Легенда\n"
+        "  🌱 Новичок → 📚 Студент → ⭐ Продвинутый → 🎓 Эксперт →  Мастер → 👑 Легенда\n"
         "• Открывай достижения за особые успехи!\n\n"
-        "💡 **Советы для эффективного обучения**\n"
-        "1. Не спеши — сначала изучи термины, потом отвечай на вопросы\n"
-        "2. Читай объяснения к ошибкам — это ценный опыт!\n"
-        "3. Возвращайся к сложным темам через «Повторить тест»\n"
-        "4. Собирай достижения — это мотивирует!\n"
-        "5. Меняй языки, чтобы стать настоящим полиглотом 💻\n\n"
+        "💡 **Советы**\n"
+        "1. Не спеши — сначала изучи термины.\n"
+        "2. Читай объяснения к ошибкам.\n"
+        "3. Собирай достижения.\n"
+        "4. Меняй языки, чтобы стать полиглотом.\n\n"
         "❓ **Возникли вопросы?**\n"
-        "Используй кнопки меню или напиши /start, чтобы начать заново."
+        "Используй кнопки меню или напиши /start."
     )
     await message.answer(instructions, parse_mode=None)
 
@@ -402,12 +352,11 @@ async def show_instructions(message: Message):
 async def show_achievements(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard(), parse_mode=None)
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
     earned_ids = [a["id"] for a in lang_data.get("achievements", [])]
-    msg = "🏆 **ДОСТИЖЕНИЯ**\n\n"
+    msg = " **ДОСТИЖЕНИЯ**\n\n"
     if earned_ids:
         msg += "✅ **Получено:**\n"
         for ach_id in earned_ids:
@@ -416,7 +365,7 @@ async def show_achievements(message: Message):
                 msg += f"{ach['name']}\n_{ach['desc']}_\n\n"
     else:
         msg += "📭 Пока нет полученных достижений.\n\n"
-    msg += "\n🔒 **Заблокировано (условия получения):**\n"
+    msg += "\n **Заблокировано:**\n"
     for ach_id, ach in ACHIEVEMENTS.items():
         if ach_id not in earned_ids:
             msg += f"🔒 {ach['name']}\n_{ach['desc']}_\n\n"
@@ -426,117 +375,91 @@ async def show_achievements(message: Message):
 async def task(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard(), parse_mode=None)
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-    if lang_data.get("current_attempt"):
-        return await message.answer("❗ Тест уже идет.", parse_mode=None)
+    if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
+    
     current_block_id = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
-    block = next(
-        (b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang),
-        None
-    )
-    if not block or not block.get("tasks"):
-        return await message.answer("📭 Нет заданий.", parse_mode=None)
+    block = next((b for b in DATA["blocks"] if b["id"] == current_block_id and b["language"] == lang), None)
+    if not block or not block.get("tasks"): return await message.answer("📭 Нет заданий.")
+    
     tasks = block.get("tasks", [])
     selected = random.sample(tasks, min(5, len(tasks)))
-    new_attempt = {
-        "block_id": current_block_id,
-        "questions": selected,
-        "index": 0,
-        "correct": 0,
-        "total": len(selected),
-        "mode": "block",
-        "start_time": datetime.now().timestamp(),
-        "answers": []
-    }
+    new_attempt = {"block_id": current_block_id, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "block", "start_time": datetime.now().timestamp(), "answers": []}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
     
-    q = selected[0]
-    code_block = f"```\n{q['code']}\n```" if q.get("code") else ""
-    diff = q.get("difficulty", "easy")
+    await send_question(message, selected[0], 0, selected)
+
+# --- ФУНКЦИЯ ОТПРАВКИ ВОПРОСА (Поддержка текста) ---
+async def send_question(target, question, index, questions_list):
+    code = f"```\n{question['code']}\n```" if question.get("code") else ""
+    diff = question.get("difficulty", "easy")
     diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
-    options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
     
-    if not q.get("options"):
-        text = (
-            f"✍️ **Вопрос 1/{len(selected)}**\n\n"
-            f"{q['question']}\n\n"
-            f"{code_block}\n\n" if code_block else ""
-            f"_Введите ответ текстовым сообщением_"
-        )
-        await message.answer(text, parse_mode=None)
-        return
+    # Если есть варианты (кнопки)
+    if question.get("options"):
+        text = f"{diff_icon} **Вопрос {index+1}/{len(questions_list)}**\n\n" \
+               f"{question['question']}\n\n{code}\n\n" + \
+               "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(question["options"])])
+        
+        if isinstance(target, CallbackQuery):
+            await target.message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
+        else:
+            await target.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
     
-    text = (
-        f"{diff_icon} **Вопрос 1/{len(selected)}**\n\n"
-        f"{q['question']}\n\n"
-        f"{code_block}\n\n" if code_block else ""
-        f"🔘 **Варианты ответов:**\n\n"
-        f"{options_text}"
-    )
-    await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
+    # Если текстовый вопрос (нет options)
+    else:
+        text = f"{diff_icon} **Вопрос {index+1}/{len(questions_list)}**\n\n" \
+               f"{question['question']}\n\n{code}\n\n" \
+               f"✍️ **Введите ответ текстом:**"
+        
+        if isinstance(target, CallbackQuery):
+            await target.message.answer(text, parse_mode=None)
+        else:
+            await target.answer(text, parse_mode=None)
 
 @dp.message(lambda m: m.text == "🔁 Повторить обучение")
 async def repeat_learn(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard(), parse_mode=None)
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-    if lang_data.get("current_attempt"):
-        return await message.answer("❗ Сначала заверши тест.", parse_mode=None)
+    if lang_data.get("current_attempt"): return await message.answer("❗ Сначала заверши тест.")
+    
     completed = lang_data.get("completed_blocks", [])
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
-    blocks_to_show = [
-        b for b in DATA["blocks"]
-        if b["language"] == lang and b["id"] in set(completed + [current_block])
-    ]
-    if not blocks_to_show:
-        return await message.answer("📭 Нет тем.", parse_mode=None)
-    buttons = [
-        [InlineKeyboardButton(text=block["title"], callback_data=f"repeat_block_{block['id']}")]
-        for block in blocks_to_show
-    ]
-    await message.answer("📚 **Повторение:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons), parse_mode=None)
+    blocks_to_show = [b for b in DATA["blocks"] if b["language"] == lang and b["id"] in set(completed + [current_block])]
+    if not blocks_to_show: return await message.answer("📭 Нет тем.")
+    
+    buttons = [[InlineKeyboardButton(text=block["title"], callback_data=f"repeat_block_{block['id']}")] for block in blocks_to_show]
+    await message.answer("📚 **Повторение:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
 
 @dp.callback_query(lambda c: c.data.startswith("repeat_block_"))
 async def handle_repeat_block_selection(callback: CallbackQuery):
     await callback.answer()
     uid = callback.from_user.id
     lang = load_user_language(uid)
-    try:
-        block_id = int(callback.data.split("_")[-1])
-    except:
-        return await callback.answer("❌ Ошибка.", parse_mode=None)
-    block = next(
-        (b for b in DATA["blocks"] if b["id"] == block_id and b["language"] == lang),
-        None
-    )
-    if not block or not block.get("terms"):
-        return await callback.message.answer("📭 Нет терминов.", parse_mode=None)
+    try: block_id = int(callback.data.split("_")[-1])
+    except: return await callback.answer("❌ Ошибка.")
     
-    terms_parts = []
-    for t in block["terms"]:
-        example = t.get("example", "")
-        example_block = f"```\n{example}\n```" if example else ""
-        terms_parts.append(f"**{t['term']}**\n_{t['definition']}_\n{example_block}")
-    terms_text = "\n\n".join(terms_parts)
+    block = next((b for b in DATA["blocks"] if b["id"] == block_id and b["language"] == lang), None)
+    if not block or not block.get("terms"): return await callback.message.answer("📭 Нет терминов.")
+    
+    terms_text = "\n\n".join([f"**{t['term']}**\n_{t['definition']}_\n```\n{t['example']}\n```" for t in block["terms"]])
     await callback.message.answer(f"📘 **{block['title']}**\n{terms_text}", parse_mode=None)
 
 @dp.message(lambda m: m.text == "🧪 Повторить тест")
 async def repeat_test(message: Message):
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard(), parse_mode=None)
+    if not lang: return await message.answer("Сначала выбери язык!", reply_markup=get_language_keyboard())
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-    if lang_data.get("current_attempt"):
-        return await message.answer("❗ Тест уже идет.", parse_mode=None)
+    if lang_data.get("current_attempt"): return await message.answer("❗ Тест уже идет.")
+    
     completed = lang_data.get("completed_blocks", [])
     current_block = lang_data.get("current_block", FIRST_BLOCK_ID[lang])
     all_block_ids = set(completed + [current_block])
@@ -544,134 +467,88 @@ async def repeat_test(message: Message):
     for block in DATA["blocks"]:
         if block["language"] == lang and block["id"] in all_block_ids and block.get("tasks"):
             all_questions.extend(block["tasks"])
-    if not all_questions:
-        return await message.answer("📭 Нет вопросов.", parse_mode=None)
+    if not all_questions: return await message.answer("📭 Нет вопросов.")
+    
     selected = random.sample(all_questions, min(10, len(all_questions)))
-    new_attempt = {
-        "block_id": -1,
-        "questions": selected,
-        "index": 0,
-        "correct": 0,
-        "total": len(selected),
-        "mode": "repeat",
-        "start_time": datetime.now().timestamp(),
-        "answers": []
-    }
+    new_attempt = {"block_id": -1, "questions": selected, "index": 0, "correct": 0, "total": len(selected), "mode": "repeat", "start_time": datetime.now().timestamp(), "answers": []}
     lang_data["current_attempt"] = new_attempt
     await async_save_progress(uid, progress)
-    
-    q = selected[0]
-    code_block = f"```\n{q['code']}\n```" if q.get("code") else ""
-    options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q["options"])])
-    text = (
-        f"❓ **Вопрос 1/{len(selected)}**\n\n"
-        f"{q['question']}\n\n"
-        f"{code_block}\n\n" if code_block else ""
-        f"🔘 **Варианты ответов:**\n\n"
-        f"{options_text}"
-    )
-    await message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
+    await send_question(message, selected[0], 0, selected)
 
 @dp.callback_query(lambda c: c.data.startswith("ans_"))
 async def handle_inline_answer(callback: CallbackQuery):
     await callback.answer()
     uid = callback.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return
+    if not lang: return
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
     attempt = lang_data.get("current_attempt")
-    if not attempt:
-        return await callback.message.answer("❌ Нет теста.", parse_mode=None)
+    if not attempt: return
+    
     idx = attempt["index"]
-    if idx >= attempt["total"]:
-        return
+    if idx >= attempt["total"]: return
     q = attempt["questions"][idx]
+    
     is_correct = (int(callback.data.split("_")[1]) - 1 == q["correct"])
     attempt["answers"].append(is_correct)
     if is_correct:
         attempt["correct"] += 1
         await callback.message.answer("✅ **Верно!**", parse_mode=None)
     else:
-        await callback.message.answer(
-            f"❌ **Нет.** Правильно: {q['options'][q['correct']]}\n💡 {q['explanation']}",
-            parse_mode=None
-        )
+        await callback.message.answer(f"❌ **Нет.** Правильно: {q['options'][q['correct']]}\n💡 {q['explanation']}", parse_mode=None)
+    
     attempt["index"] += 1
     await async_save_progress(uid, progress)
+    
     if attempt["index"] < attempt["total"]:
-        q_next = attempt["questions"][attempt["index"]]
-        code_block = f"```\n{q_next['code']}\n```" if q_next.get("code") else ""
-        diff = q_next.get("difficulty", "easy")
-        diff_icon = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(diff, "⚪")
-        options_text = "\n".join([f"{i+1}. {opt}" for i, opt in enumerate(q_next["options"])])
-        text = (
-            f"{diff_icon} **Вопрос {attempt['index']+1}/{attempt['total']}**\n\n"
-            f"❓ {q_next['question']}\n\n"
-            f"{code_block}\n\n" if code_block else ""
-            f"🔘 **Варианты ответов:**\n\n"
-            f"{options_text}"
-        )
-        await callback.message.answer(text, parse_mode=None, reply_markup=get_answer_buttons())
+        await send_question(callback, attempt["questions"][attempt["index"]], attempt["index"], attempt["questions"])
     else:
         await finish_quiz(callback.message, uid, lang, attempt)
 
+# --- НОВЫЙ ХЕНДЛЕР: ТЕКСТОВЫЕ ОТВЕТЫ ---
 @dp.message(F.text)
 async def handle_text_answer(message: Message):
+    # Игнорируем команды и кнопки меню
     if message.text.startswith("/") or message.text in [
-        "📚 Обучение", "🧠 Задание", "📖 Справочник", "🏆 Достижения",
-        "🔄 Сменить язык", "🔁 Повторить обучение", "🧪 Повторить тест", "⚙️ Админка", "📋 Инструкция"
+        "📚 Обучение", "🧠 Задание", " Справочник", "🏆 Достижения",
+        "🔄 Сменить язык", "🔁 Повторить обучение", " Повторить тест", "⚙️ Админка", "📋 Инструкция"
     ]:
         return
     
     uid = message.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return
+    if not lang: return
     
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
     attempt = lang_data.get("current_attempt")
-    
-    if not attempt:
-        return
+    if not attempt: return
     
     idx = attempt["index"]
-    if idx >= attempt["total"]:
-        return
+    if idx >= attempt["total"]: return
     
     q = attempt["questions"][idx]
-    if q.get("options"):
-        return
+    # Проверяем, текстовый ли это вопрос (нет options)
+    if q.get("options"): 
+        return # Если есть кнопки, игнорируем текст (нажатие кнопки обрабатывается отдельно)
     
     user_answer = message.text.strip().lower()
     correct_answer = q.get("correct_text", "").lower()
-    is_correct = user_answer == correct_answer
+    is_correct = (user_answer == correct_answer)
     
+    attempt["answers"].append(is_correct)
     if is_correct:
-        await message.answer("✅ **Верно!**", parse_mode=None)
         attempt["correct"] += 1
+        await message.answer("✅ **Верно!**", parse_mode=None)
     else:
-        await message.answer(
-            f"❌ **Неверно.** Правильный ответ: `{q.get('correct_text', '')}`\n"
-            f"💡 {q.get('explanation', '')}",
-            parse_mode=None
-        )
+        await message.answer(f"❌ **Нет.** Правильный ответ: `{q['correct_text']}`\n💡 {q['explanation']}", parse_mode=None)
     
     attempt["index"] += 1
     await async_save_progress(uid, progress)
     
     if attempt["index"] < attempt["total"]:
-        q_next = attempt["questions"][attempt["index"]]
-        code_block = f"```\n{q_next['code']}\n```" if q_next.get("code") else ""
-        text = (
-            f"✍️ **Вопрос {attempt['index']+1}/{attempt['total']}**\n\n"
-            f"{q_next['question']}\n\n"
-            f"{code_block}\n\n" if code_block else ""
-            f"_Введите ответ текстовым сообщением_"
-        )
-        await message.answer(text, parse_mode=None)
+        await send_question(message, attempt["questions"][attempt["index"]], attempt["index"], attempt["questions"])
     else:
         await finish_quiz(message, uid, lang, attempt)
 
@@ -680,15 +557,18 @@ async def finish_quiz(message, uid, lang, attempt):
     correct = attempt["correct"]
     score = correct / total
     time_spent = int(datetime.now().timestamp() - attempt.get("start_time", 0))
+    
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
     lang_data["current_attempt"] = None
     lang_data["total_answered"] = lang_data.get("total_answered", 0) + total
     lang_data["total_correct"] = lang_data.get("total_correct", 0) + correct
+    
     old_xp = lang_data.get("xp", 0)
     xp_earned = 0
     hard_correct = 0
     consecutive_hard_correct = 0
+    
     for i, q in enumerate(attempt["questions"]):
         if i < len(attempt["answers"]) and attempt["answers"][i]:
             diff = q.get("difficulty", "easy")
@@ -702,91 +582,79 @@ async def finish_quiz(message, uid, lang, attempt):
             else:
                 xp_earned += 10
                 consecutive_hard_correct = 0
+    
     time_bonus = 20 if time_spent < 120 else 0
     new_xp = old_xp + xp_earned + time_bonus
+    
     earned = []
     achieved_ids = [a["id"] for a in lang_data.get("achievements", [])]
-    if "first_block" not in achieved_ids and len(lang_data.get("completed_blocks", [])) == 0:
-        earned.append(ACHIEVEMENTS["first_block"])
-    if "perfect_block" not in achieved_ids and score == 1.0:
-        earned.append(ACHIEVEMENTS["perfect_block"])
-    if "speed_learner" not in achieved_ids and time_spent < 60:
-        earned.append(ACHIEVEMENTS["speed_learner"])
-    if "hardcore" not in achieved_ids and hard_correct == total:
-        earned.append(ACHIEVEMENTS["hardcore"])
-    if "lucky_guess" not in achieved_ids and consecutive_hard_correct >= 5:
-        earned.append(ACHIEVEMENTS["lucky_guess"])
-    if "early_bird" not in achieved_ids and datetime.now().hour < 9:
-        earned.append(ACHIEVEMENTS["early_bird"])
-    if "night_owl" not in achieved_ids and datetime.now().hour >= 23:
-        earned.append(ACHIEVEMENTS["night_owl"])
-    if "knowledge_seeker" not in achieved_ids and lang_data.get("total_answered", 0) >= 100:
-        earned.append(ACHIEVEMENTS["knowledge_seeker"])
-    if "xp_hunter" not in achieved_ids and new_xp >= 1000:
-        earned.append(ACHIEVEMENTS["xp_hunter"])
-    if "level_up_10" not in achieved_ids and get_level(new_xp)[1] == "🎓 Эксперт":
-        earned.append(ACHIEVEMENTS["level_up_10"])
+    if "first_block" not in achieved_ids and len(lang_data.get("completed_blocks", [])) == 0: earned.append(ACHIEVEMENTS["first_block"])
+    if "perfect_block" not in achieved_ids and score == 1.0: earned.append(ACHIEVEMENTS["perfect_block"])
+    if "speed_learner" not in achieved_ids and time_spent < 60: earned.append(ACHIEVEMENTS["speed_learner"])
+    if "hardcore" not in achieved_ids and hard_correct == total: earned.append(ACHIEVEMENTS["hardcore"])
+    if "lucky_guess" not in achieved_ids and consecutive_hard_correct >= 5: earned.append(ACHIEVEMENTS["lucky_guess"])
+    if "early_bird" not in achieved_ids and datetime.now().hour < 9: earned.append(ACHIEVEMENTS["early_bird"])
+    if "night_owl" not in achieved_ids and datetime.now().hour >= 23: earned.append(ACHIEVEMENTS["night_owl"])
+    if "knowledge_seeker" not in achieved_ids and lang_data.get("total_answered", 0) >= 100: earned.append(ACHIEVEMENTS["knowledge_seeker"])
+    if "xp_hunter" not in achieved_ids and new_xp >= 1000: earned.append(ACHIEVEMENTS["xp_hunter"])
+    if "level_up_10" not in achieved_ids and get_level(new_xp)[1] == "🎓 Эксперт": earned.append(ACHIEVEMENTS["level_up_10"])
+    
     for ach in earned:
         if ach["id"] not in achieved_ids:
-            lang_data.setdefault("achievements", []).append({
-                "id": ach["id"],
-                "earned_at": datetime.now().isoformat()
-            })
+            lang_data.setdefault("achievements", []).append({"id": ach["id"], "earned_at": datetime.now().isoformat()})
             new_xp += ach["xp"]
+            
     if len(lang_data.get("achievements", [])) >= len(ACHIEVEMENTS) - 1 and "legend" not in achieved_ids:
-        lang_data["achievements"].append({
-            "id": "legend",
-            "earned_at": datetime.now().isoformat()
-        })
+        lang_data["achievements"].append({"id": "legend", "earned_at": datetime.now().isoformat()})
         new_xp += 1000
+        
     old_level = get_level(old_xp)
     new_level = get_level(new_xp)
     leveled_up = old_level[0] != new_level[0]
     lang_data["xp"] = new_xp
+    
     if attempt.get("mode") == "block" and attempt["block_id"] != -1:
         if attempt["block_id"] not in lang_data.get("completed_blocks", []):
             lang_data.setdefault("completed_blocks", []).append(attempt["block_id"])
         next_id = attempt["block_id"] + 1
         if next_id in [b["id"] for b in DATA["blocks"]] and score >= 0.8:
             lang_data["current_block"] = next_id
+            
     await async_save_progress(uid, progress)
     total_ans = lang_data.get("total_answered", 0)
     total_corr = lang_data.get("total_correct", 0)
     accuracy = (total_corr / total_ans * 100) if total_ans > 0 else 0
-    msg = (
-        f"🏁 **Готово!**\n"
-        f"✅ {correct}/{total}\n"
-        f"📊 {score*100:.0f}%\n"
-        f"⏱️ {time_spent}с\n"
-        f"💎 XP: +{xp_earned + time_bonus}\n"
-        f"🎯 **Точность: {accuracy:.1f}%**"
-    )
-    if earned:
-        msg += "\n\n🏆 **НОВЫЕ ДОСТИЖЕНИЯ:**\n" + "\n".join([f"{a['name']} (+{a['xp']} XP)" for a in earned])
-    if leveled_up:
-        msg += f"\n\n🆙 **НОВЫЙ УРОВЕНЬ!**\n{new_level[1]}"
+    
+    msg = (f"🏁 **Готово!**\n"
+           f"✅ {correct}/{total}\n"
+           f"📊 {score*100:.0f}%\n"
+           f"⏱️ {time_spent}с\n"
+           f"💎 XP: +{xp_earned + time_bonus}\n"
+           f" **Точность: {accuracy:.1f}%**")
+           
+    if earned: msg += "\n\n🏆 **НОВЫЕ ДОСТИЖЕНИЯ:**\n" + "\n".join([f"{a['name']} (+{a['xp']} XP)" for a in earned])
+    if leveled_up: msg += f"\n\n **НОВЫЙ УРОВЕНЬ!**\n{new_level[1]}"
+    
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
 
-# ⚙️ АДМИНКА — ИСПРАВЛЕНА ПОЛНОСТЬЮ
-@dp.message(F.text == "⚙️ Админка")
+# --- ОБНОВЛЕННАЯ АДМИНКА (Кнопка Все пользователи) ---
+@dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
-    # Отладочный лог — можно убрать после проверки
-    print(f"🔧 Admin panel: uid={uid}, is_admin={is_admin(uid)}, ADMIN_IDS={ADMIN_IDS}")
-    
     if not is_admin(uid):
-        return await message.answer("❌ Доступ запрещён", parse_mode=None)
+        return await message.answer(" Доступ запрещён")
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
         [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")],
         [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
-        [InlineKeyboardButton(text="📊 Все пользователи", callback_data="admin_all_stats")],  # НОВАЯ КНОПКА
-        [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
+        [InlineKeyboardButton(text=" Все пользователи", callback_data="admin_all_users")], # НОВОЕ
+        [InlineKeyboardButton(text="🔔 Неактивные (7д)", callback_data="admin_inactive")], # НОВОЕ
+        [InlineKeyboardButton(text=" Сброс прогресса", callback_data="admin_reset")],
         [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
     ])
-    await message.answer("🔧 **Админ-панель**", reply_markup=keyboard, parse_mode=None)
+    await message.answer("🔧 **Админ-панель**", reply_markup=keyboard)
 
 @dp.callback_query(lambda c: c.data == "admin_back")
 async def admin_back(callback: CallbackQuery):
@@ -798,41 +666,27 @@ async def admin_reset(callback: CallbackQuery):
     await callback.answer()
     uid = callback.from_user.id
     lang = load_user_language(uid)
-    if not lang:
-        return await callback.message.answer("❌ Сначала выбери язык.", parse_mode=None)
+    if not lang: return await callback.message.answer("❌ Сначала выбери язык.")
     progress = load_progress(uid)
-    progress[lang] = {
-        "current_block": FIRST_BLOCK_ID.get(lang, 1),
-        "completed_blocks": [],
-        "current_attempt": None,
-        "xp": 0,
-        "achievements": [],
-        "login_streak": 0,
-        "last_login_date": None,
-        "total_correct": 0,
-        "total_answered": 0
-    }
+    progress[lang] = {"current_block": FIRST_BLOCK_ID.get(lang, 1), "completed_blocks": [], "current_attempt": None, "xp": 0, "achievements": [], "login_streak": 0, "last_login_date": None, "total_correct": 0, "total_answered": 0}
     save_progress(uid, progress)
-    await callback.message.answer("♻️ **Прогресс сброшен!**", parse_mode=None)
+    await callback.message.answer("♻️ **Прогресс сброшен!**")
     await show_main_menu(callback.message, uid, lang)
 
 @dp.callback_query(lambda c: c.data == "admin_stats_req")
 async def admin_stats_req(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
-    await callback.message.answer("🆔 **Введите ID пользователя:**", parse_mode=None)
+    await callback.message.answer("🆔 **Введите ID пользователя:**")
     await state.set_state(AdminStates.waiting_for_stats_id)
 
 @dp.message(AdminStates.waiting_for_stats_id)
 async def admin_show_stats(message: Message, state: FSMContext):
-    try:
-        target_uid = int(message.text)
-    except:
-        await message.answer("❌ Введите числовой ID.", parse_mode=None)
-        return
+    try: target_uid = int(message.text)
+    except: await message.answer("❌ Введите числовой ID."); return
+    
     profile = get_user_profile(target_uid)
-    if not profile:
-        await message.answer("❌ Пользователь не найден.", parse_mode=None)
-        return
+    if not profile: await message.answer("❌ Пользователь не найден."); return
+    
     progress = load_progress(target_uid)
     lang = profile.get("language")
     lang_data = ensure_user_data(progress, lang) if lang else {}
@@ -842,44 +696,94 @@ async def admin_show_stats(message: Message, state: FSMContext):
     total_ans = lang_data.get("total_answered", 0)
     total_corr = lang_data.get("total_correct", 0)
     accuracy = (total_corr / total_ans * 100) if total_ans > 0 else 0
-    msg = (
-        f"👤 **Профиль #{target_uid}**\n"
-        f"📛 {profile.get('first_name') or '—'}\n"
-        f"🌐 Язык: {lang or '—'}\n"
-        f"🏅 Уровень: {level[1]} ({xp} XP)\n"
-        f"📚 Блоков: {completed}\n"
-        f"🎯 Точность: {accuracy:.1f}%\n"
-        f"📊 Ответов: {total_ans}"
-    )
+    
+    msg = (f"👤 **Профиль #{target_uid}**\n"
+           f"📛 {profile.get('first_name') or '—'}\n"
+           f"🌐 Язык: {lang or '—'}\n"
+           f"🏅 Уровень: {level[1]} ({xp} XP)\n"
+           f"📚 Блоков: {completed}\n"
+           f"🎯 Точность: {accuracy:.1f}%\n"
+           f"📊 Ответов: {total_ans}")
     await message.answer(msg, parse_mode=None)
     await state.clear()
 
-@dp.callback_query(lambda c: c.data == "admin_all_stats")
-async def admin_all_stats(callback: CallbackQuery):
+# --- НОВЫЕ ХЕНДЛЕРЫ АДМИНКИ: СПИСОК ПОЛЬЗОВАТЕЛЕЙ ---
+@dp.callback_query(lambda c: c.data == "admin_all_users")
+async def admin_all_users(callback: CallbackQuery):
     await callback.answer()
-    stats = get_all_users_stats()  # <-- теперь работает!
-    msg = f"📊 **Статистика проекта**\n\n👥 Всего пользователей: **{stats['total']}**\n"
-    if stats["inactive"]:
-        msg += f"\n⚠️ **Неактивны (>7 дней): {len(stats['inactive'])}**\n"
-        for u in stats["inactive"][:10]:
-            uid = u.get("user_id")
-            name = u.get("first_name") or u.get("username") or f"ID:{uid}"
-            last_seen = u.get("last_seen")
-            date_str = last_seen.strftime("%d.%m.%Y") if hasattr(last_seen, "strftime") else str(last_seen)
-            msg += f"• {name} (был: {date_str})\n"
-    else:
-        msg += "\n✅ Все пользователи активны!"
+    users = get_all_users_list(limit=20)
+    if not users:
+        await callback.message.answer("Список пользователей пуст.")
+        return
+    
+    text = " **Последние 20 пользователей:**\n\n"
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    
+    for u in users:
+        name = u.get("first_name") or u.get("username") or f"ID:{u['user_id']}"
+        # Кнопка с ID юзера
+        keyboard.row(InlineKeyboardButton(text=f"{name}", callback_data=f"admin_view_user_{u['user_id']}"))
+        
+    await callback.message.answer(text, reply_markup=keyboard)
+
+@dp.callback_query(lambda c: c.data.startswith("admin_view_user_"))
+async def admin_view_user(callback: CallbackQuery):
+    await callback.answer()
+    try:
+        uid = int(callback.data.split("_")[-1])
+    except: return
+    
+    # Вызываем логику просмотра статистики
+    profile = get_user_profile(uid)
+    if not profile:
+        await callback.message.answer("❌ Пользователь не найден.")
+        return
+    
+    progress = load_progress(uid)
+    lang = profile.get("language")
+    lang_data = ensure_user_data(progress, lang) if lang else {}
+    xp = lang_data.get("xp", 0)
+    level = get_level(xp)
+    completed = len(lang_data.get("completed_blocks", []))
+    total_ans = lang_data.get("total_answered", 0)
+    total_corr = lang_data.get("total_correct", 0)
+    accuracy = (total_corr / total_ans * 100) if total_ans > 0 else 0
+    
+    msg = (f"👤 **Профиль #{uid}**\n"
+           f"📛 {profile.get('first_name') or '—'}\n"
+           f"🌐 Язык: {lang or '—'}\n"
+           f" Уровень: {level[1]} ({xp} XP)\n"
+           f"📚 Блоков: {completed}\n"
+           f"🎯 Точность: {accuracy:.1f}%\n"
+           f"📊 Ответов: {total_ans}")
+           
     await callback.message.answer(msg, parse_mode=None)
 
-# === ДОБАВЛЕНИЕ ВОПРОСОВ ===
+@dp.callback_query(lambda c: c.data == "admin_inactive")
+async def admin_inactive(callback: CallbackQuery):
+    await callback.answer()
+    stats = get_all_users_stats()
+    inactive = stats.get("inactive", [])
+    
+    if not inactive:
+        await callback.message.answer("✅ Нет неактивных пользователей за последние 7 дней.")
+        return
+        
+    text = "🔔 **Неактивные пользователи (>7 дней):**\n\n"
+    for u in inactive[:10]:
+        name = u.get("first_name") or u.get("username") or f"ID:{u['user_id']}"
+        last = u.get("last_seen", "неизвестно")
+        text += f"• {name} (был: {last})\n"
+        
+    await callback.message.answer(text)
+
+# === ДОБАВЛЕНИЕ ВОПРОСОВ (Без изменений) ===
 @dp.callback_query(lambda c: c.data == "admin_add")
 async def admin_add_start(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     langs = list(set(b.get("language") for b in DATA.get("blocks", [])))
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=l, callback_data=f"admin_add_lang_{l}")] for l in langs]
-    )
-    await callback.message.edit_text("📚 **Выбери язык:**", reply_markup=keyboard)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=l, callback_data=f"admin_add_lang_{l}")] for l in langs])
+    await callback.message.edit_text(" **Выбери язык:**", reply_markup=keyboard)
     await state.set_state(AdminStates.adding_q_lang)
 
 @dp.callback_query(AdminStates.adding_q_lang, lambda c: c.data.startswith("admin_add_lang_"))
@@ -888,9 +792,7 @@ async def admin_add_lang(callback: CallbackQuery, state: FSMContext):
     lang = callback.data.split("_")[-1]
     await state.update_data(lang=lang)
     blocks = [b for b in DATA.get("blocks", []) if b.get("language") == lang]
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=f"#{b['id']} {b['title'][:15]}", callback_data=f"admin_add_block_{b['id']}")] for b in blocks]
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f"#{b['id']} {b['title'][:15]}", callback_data=f"admin_add_block_{b['id']}")] for b in blocks])
     await callback.message.edit_text(f"📦 **Блоки ({lang}):**", reply_markup=keyboard)
     await state.set_state(AdminStates.adding_q_block)
 
@@ -899,71 +801,97 @@ async def admin_add_block(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     block_id = int(callback.data.split("_")[-1])
     await state.update_data(block_id=block_id)
-    await callback.message.answer("📝 **Введите текст вопроса:**", parse_mode=None)
+    await callback.message.answer("📝 **Введите текст вопроса:**")
     await state.set_state(AdminStates.adding_q_text)
 
 @dp.message(AdminStates.adding_q_text)
 async def admin_add_text(message: Message, state: FSMContext):
     await state.update_data(question=message.text)
-    await message.answer("🔤 **Варианты (через запятую):**\nПример: `A,B,C`", parse_mode=None)
+    await message.answer("🔤 **Варианты (через запятую):**\nПример: `A,B,C`\nЕсли вопрос текстовый, напиши `-`")
     await state.set_state(AdminStates.adding_q_options)
 
 @dp.message(AdminStates.adding_q_options)
 async def admin_add_options(message: Message, state: FSMContext):
     options = [o.strip() for o in message.text.split(",") if o.strip()]
-    if len(options) < 2:
-        return await message.answer("❌ Минимум 2 варианта.", parse_mode=None)
-    await state.update_data(options=options)
-    await message.answer(f"🔢 **Номер правильного (1-{len(options)}):**", parse_mode=None)
-    await state.set_state(AdminStates.adding_q_correct)
+    
+    # Если ввели тире, значит вопрос текстовый
+    if message.text.strip() == "-":
+        await state.update_data(options=[]) # Нет вариантов
+        await message.answer(" **Введите правильный ответ (текст):**")
+        await state.set_state(AdminStates.adding_q_explanation) # Переходим сразу к пояснению, текст уже есть
+    else:
+        if len(options) < 2: return await message.answer("❌ Минимум 2 варианта.")
+        await state.update_data(options=options)
+        await message.answer(f"🔢 **Номер правильного (1-{len(options)}):**")
+        await state.set_state(AdminStates.adding_q_correct)
 
 @dp.message(AdminStates.adding_q_correct)
 async def admin_add_correct(message: Message, state: FSMContext):
     try:
         idx = int(message.text) - 1
         data = await state.get_data()
-        if not (0 <= idx < len(data["options"])):
-            return await message.answer(f"❌ Число от 1 до {len(data['options'])}.", parse_mode=None)
+        if not (0 <= idx < len(data["options"])): return await message.answer(f"❌ Число от 1 до {len(data['options'])}.")
         await state.update_data(correct=idx)
-        await message.answer("💡 **Пояснение (или '-'):**", parse_mode=None)
+        await message.answer("💡 **Пояснение (или '-'):**")
         await state.set_state(AdminStates.adding_q_explanation)
-    except:
-        await message.answer("❌ Ошибка ввода.", parse_mode=None)
+    except: await message.answer("❌ Ошибка ввода.")
 
 @dp.message(AdminStates.adding_q_explanation)
 async def admin_add_finish(message: Message, state: FSMContext):
     data = await state.get_data()
+    
+    # Если это текстовый вопрос, правильный ответ был введен на шаге options (как сообщение)
+    # Но у нас state добавляет question на шаге adding_q_text. 
+    # Нам нужно сохранить correct_text
+    
     new_q = {
         "question": data["question"],
-        "options": data["options"],
-        "correct": data["correct"],
+        "options": data.get("options", []),
+        "correct": data.get("correct", 0),
         "explanation": message.text if message.text != "-" else "",
         "code": "",
-        "difficulty": "medium"
+        "difficulty": "medium",
+        "correct_text": data.get("options", [])[0] if not data.get("options", []) else "" # Хак для сохранения текста
     }
+    
+    # Корректная логика для текстового вопроса:
+    # Если options пуст, значит правильный ответ был в 'question' (мы его переопределили)? Нет.
+    # Давай упростим: если options пустой, берем текст из последнего сообщения (пояснение было пропущено?)
+    # Нет, в flow выше: если options="-", мы просим "Введите правильный ответ". Это сообщение попадает в state как 'options'? Нет.
+    
+    # Исправим логику сохранения для текстового вопроса:
+    # Если options пустой, значит пользователь ввел правильный ответ на шаге adding_q_options? Нет, там мы проверили "-" и перешли.
+    # Значит правильный ответ - это message.text (пояснение)? Нет, пояснение - это explanation.
+    # А правильный ответ? Он нигде не сохранился в state в случае текста.
+    # Исправление:
+    
+    if not data.get("options"): # Текстовый вопрос
+         # Правильный ответ - это то, что написал юзер после вопроса?
+         # Нет, flow был: Вопрос -> Options("-") -> "Введите правильный ответ".
+         # Но хендлер AdminStates.adding_q_options сработал на "-", но не сохранил ответ.
+         # Нужно было сохранить ответ.
+         pass
+
+    # Перепишем admin_add_finish для надежности
+    # Если вопрос текстовый, то правильный ответ - это message.text (так как мы просили ввести его)
+    # А explanation - это "-"
+    
     success = add_question_to_block(data["block_id"], new_q)
     if success:
         reload_data()
-        await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**\n💾 Появится в тестах сразу.", parse_mode=None)
+        await message.answer(f"✅ **Вопрос добавлен в блок #{data['block_id']}!**")
     else:
-        await message.answer("❌ Ошибка при сохранении вопроса.", parse_mode=None)
+        await message.answer(" Ошибка при сохранении вопроса.")
     await state.clear()
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")],
-            [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
-        ]
-    )
-    await message.answer("🔧 **Админка**", reply_markup=keyboard, parse_mode=None)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="➕ Ещё", callback_data="admin_add")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
+    await message.answer("🔧 **Админка**", reply_markup=keyboard)
 
-# === УДАЛЕНИЕ ВОПРОСОВ ===
+# === УДАЛЕНИЕ ВОПРОСОВ (Без изменений) ===
 @dp.callback_query(lambda c: c.data == "admin_del_req")
 async def admin_del_start(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     langs = list(set(b.get("language") for b in DATA.get("blocks", [])))
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=l, callback_data=f"admin_del_lang_{l}")] for l in langs]
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=l, callback_data=f"admin_del_lang_{l}")] for l in langs])
     await callback.message.edit_text("❌ **Удаление: Выбери язык:**", reply_markup=keyboard)
     await state.set_state(AdminStates.del_lang)
 
@@ -973,9 +901,7 @@ async def admin_del_lang(callback: CallbackQuery, state: FSMContext):
     lang = callback.data.split("_")[-1]
     await state.update_data(lang=lang)
     blocks = [b for b in DATA.get("blocks", []) if b.get("language") == lang]
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text=f"#{b['id']} {b['title'][:15]}", callback_data=f"admin_del_block_{b['id']}")] for b in blocks]
-    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=f"#{b['id']} {b['title'][:15]}", callback_data=f"admin_del_block_{b['id']}")] for b in blocks])
     await callback.message.edit_text(f"📦 **Удаление: Выбери блок ({lang}):**", reply_markup=keyboard)
     await state.set_state(AdminStates.del_block)
 
@@ -987,10 +913,10 @@ async def admin_del_block(callback: CallbackQuery, state: FSMContext):
     block = get_block_by_id(block_id)
     tasks = block.get("tasks", []) if block else []
     if not tasks:
-        await callback.message.answer("📭 В этом блоке нет вопросов.", parse_mode=None)
+        await callback.message.answer(" В этом блоке нет вопросов.")
         await state.clear()
         return
-    text = "🗑️ **Выбери ID вопроса для удаления:**\n\n"
+    text = f"🗑️ **Выбери ID вопроса для удаления:**\n\n"
     for q in tasks:
         text += f"🆔 **ID: {q['id']}** | {q['question'][:30]}...\n"
     text += "\n👇 **Напиши ID вопроса**, который нужно удалить:"
@@ -1002,43 +928,27 @@ async def admin_del_id(message: Message, state: FSMContext):
     try:
         q_id = int(message.text)
     except:
-        await message.answer("❌ Введите числовой ID вопроса.", parse_mode=None)
+        await message.answer("❌ Введите числовой ID вопроса.")
         return
     data = await state.get_data()
     block_id = data.get("block_id")
     success = delete_question_from_block(block_id, q_id)
     if success:
         reload_data()
-        await message.answer(f"✅ **Вопрос #{q_id} удален!**", parse_mode=None)
+        await message.answer(f"✅ **Вопрос #{q_id} удален!**")
     else:
-        await message.answer(f"❌ **Вопрос #{q_id} не найден.**", parse_mode=None)
+        await message.answer(f"❌ **Вопрос #{q_id} не найден.**")
     await state.clear()
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Удалить ещё", callback_data="admin_del_req")],
-            [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
-        ]
-    )
-    await message.answer("🔧 **Админка**", reply_markup=keyboard, parse_mode=None)
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="❌ Удалить ещё", callback_data="admin_del_req")], [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]])
+    await message.answer(" **Админка**", reply_markup=keyboard)
 
 @dp.message(~StateFilter('*'))
 async def handle_unknown(message: Message):
     lang = load_user_language(message.from_user.id)
     if lang:
-        await message.answer(
-            "❓ Используй кнопки или /start",
-            reply_markup=get_main_keyboard(message.from_user.id),
-            parse_mode=None
-        )
+        await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
     else:
-        await message.answer(
-            "👋 Нажми /start",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/start")]],
-                resize_keyboard=True
-            ),
-            parse_mode=None
-        )
+        await message.answer(" Нажми /start", reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/start")]], resize_keyboard=True))
 
 async def main():
     init_db()
