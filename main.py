@@ -436,11 +436,8 @@ async def handle_inline_answer(callback: CallbackQuery):
     if not lang: return
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
-
     attempt = lang_data.get("current_attempt")
-    if not attempt: 
-        return await message.answer("❓ Я вас не понял. Используйте кнопки меню или начните тест командой «🧠 Задание».")
-    
+    if not attempt: return
     idx = attempt["index"]
     if idx >= attempt["total"]: return
     q = attempt["questions"][idx]
@@ -475,36 +472,7 @@ async def admin_panel(message: Message):
     ])
     await message.answer("🔧 **Админ-панель** ", reply_markup=keyboard)
 
-@dp.message(F.text)
-async def handle_text_answer(message: Message):
-    if message.text.startswith("/") or message.text.strip() in ["📚 Обучение", "🧠 Задание", "📖 Справочник", "🏆 Достижения", "🔄 Сменить язык", "🔁 Повторить обучение", "🧪 Повторить тест", "⚙️ Админка", "📋 Инструкция"]:
-        return
-    uid = message.from_user.id
-    lang = load_user_language(uid)
-    if not lang: return
-    progress = load_progress(uid)
-    lang_data = ensure_user_data(progress, lang)
-    attempt = lang_data.get("current_attempt")
-    if not attempt: return
-    idx = attempt["index"]
-    if idx >= attempt["total"]: return
-    q = attempt["questions"][idx]
-    if q.get("options"): return
-    user_answer = message.text.strip().lower()
-    correct_answer = q.get("correct_text", "").lower()
-    is_correct = (user_answer == correct_answer)
-    attempt["answers"].append(is_correct)
-    if is_correct:
-        attempt["correct"] += 1
-        await message.answer("✅ **Верно!**", parse_mode=None)
-    else:
-        await message.answer(f"❌ **Нет.** Правильный ответ: `{q['correct_text']}`\n💡 {q['explanation']}", parse_mode=None)
-    attempt["index"] += 1
-    await async_save_progress(uid, progress)
-    if attempt["index"] < attempt["total"]:
-        await send_question(message, attempt["questions"][attempt["index"]], attempt["index"], attempt["questions"])
-    else:
-        await finish_quiz(message, uid, lang, attempt)
+
 
 async def finish_quiz(message, uid, lang, attempt):
     total = attempt["total"]
@@ -823,6 +791,37 @@ async def handle_unknown(message: Message):
         await message.answer("❓ Используй кнопки или /start", reply_markup=get_main_keyboard(message.from_user.id))
     else:
         await message.answer("Нажми /start", reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/start")]], resize_keyboard=True))
+
+@dp.message(F.text)
+async def handle_text_answer(message: Message):
+    if message.text.startswith("/") or message.text.strip() in ["📚 Обучение", "🧠 Задание", "📖 Справочник", "🏆 Достижения", "🔄 Сменить язык", "🔁 Повторить обучение", "🧪 Повторить тест", "⚙️ Админка", "📋 Инструкция"]:
+        return
+    uid = message.from_user.id
+    lang = load_user_language(uid)
+    if not lang: return
+    progress = load_progress(uid)
+    lang_data = ensure_user_data(progress, lang)
+    attempt = lang_data.get("current_attempt")
+    if not attempt: return
+    idx = attempt["index"]
+    if idx >= attempt["total"]: return
+    q = attempt["questions"][idx]
+    if q.get("options"): return
+    user_answer = message.text.strip().lower()
+    correct_answer = q.get("correct_text", "").lower()
+    is_correct = (user_answer == correct_answer)
+    attempt["answers"].append(is_correct)
+    if is_correct:
+        attempt["correct"] += 1
+        await message.answer("✅ **Верно!**", parse_mode=None)
+    else:
+        await message.answer(f"❌ **Нет.** Правильный ответ: `{q['correct_text']}`\n💡 {q['explanation']}", parse_mode=None)
+    attempt["index"] += 1
+    await async_save_progress(uid, progress)
+    if attempt["index"] < attempt["total"]:
+        await send_question(message, attempt["questions"][attempt["index"]], attempt["index"], attempt["questions"])
+    else:
+        await finish_quiz(message, uid, lang, attempt)
 
 async def main():
     init_db()
