@@ -436,8 +436,11 @@ async def handle_inline_answer(callback: CallbackQuery):
     if not lang: return
     progress = load_progress(uid)
     lang_data = ensure_user_data(progress, lang)
+
     attempt = lang_data.get("current_attempt")
-    if not attempt: return
+    if not attempt: 
+        return await message.answer("❓ Я вас не понял. Используйте кнопки меню или начните тест командой «🧠 Задание».")
+    
     idx = attempt["index"]
     if idx >= attempt["total"]: return
     q = attempt["questions"][idx]
