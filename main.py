@@ -640,22 +640,21 @@ async def finish_quiz(message, uid, lang, attempt):
     await show_main_menu(message, uid, lang)
 
 # --- ОБНОВЛЕННАЯ АДМИНКА (Кнопка Все пользователи) ---
-@dp.message(F.text == "⚙️ Админка")
+@dp.message(lambda m: m.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
     if not is_admin(uid):
-        return await message.answer(" Доступ запрещён")
+        return await message.answer("❌ Доступ запрещён")
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
         [InlineKeyboardButton(text="❌ Удалить вопрос", callback_data="admin_del_req")],
         [InlineKeyboardButton(text="📊 Статистика ID", callback_data="admin_stats_req")],
-        [InlineKeyboardButton(text=" Все пользователи", callback_data="admin_all_users")], # НОВОЕ
-        [InlineKeyboardButton(text="🔔 Неактивные (7д)", callback_data="admin_inactive")], # НОВОЕ
-        [InlineKeyboardButton(text=" Сброс прогресса", callback_data="admin_reset")],
+        [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
         [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
     ])
     await message.answer("🔧 **Админ-панель**", reply_markup=keyboard)
+    
 
 @dp.callback_query(lambda c: c.data == "admin_back")
 async def admin_back(callback: CallbackQuery):
