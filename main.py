@@ -17,6 +17,7 @@ from database import (
     get_block_by_id, add_question_to_block, delete_question_from_block,
     get_all_users_stats, get_all_users_list, get_inactive_users_count # Новые импорты
 )
+from aiogram import F
 
 logging.basicConfig(level=logging.INFO)
 
@@ -639,7 +640,7 @@ async def finish_quiz(message, uid, lang, attempt):
     await show_main_menu(message, uid, lang)
 
 # --- ОБНОВЛЕННАЯ АДМИНКА (Кнопка Все пользователи) ---
-@dp.message(lambda m: m.text == "⚙️ Админка")
+@dp.message(F.text == "⚙️ Админка")
 async def admin_panel(message: Message):
     uid = message.from_user.id
     if not is_admin(uid):
