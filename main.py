@@ -46,7 +46,7 @@ def reload_data():
         print(f"❌ Ошибка обновления данных: {e}")
 
 FIRST_BLOCK_ID = {"Python": 1, "C++": 6, "Java": 11, "JavaScript": 16, "Git": 21}
-ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip().isdigit()]
+ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS","").split(",") if x.strip().isdigit()]
 
 ACHIEVEMENTS = {
     "first_block": {"id": "first_block", "name": "🌟 Первый шаг", "desc": "Пройти первый учебный блок", "xp": 50},
@@ -455,6 +455,23 @@ async def handle_inline_answer(callback: CallbackQuery):
     else:
         await finish_quiz(callback.message, uid, lang, attempt)
 
+@dp.message(lambda m: m.text.strip() == "⚙️ Админка")
+async def admin_panel(message: Message):
+    uid = message.from_user.id
+    if not is_admin(uid):
+        return await message.answer("❌ Доступ запрещён")
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
+        [InlineKeyboardButton(text=" Удалить вопрос", callback_data="admin_del_req")],
+        [InlineKeyboardButton(text=" Статистика по ID", callback_data="admin_stats_req")],
+        [InlineKeyboardButton(text="📊 Статистика всех", callback_data="admin_stats_all")],
+        [InlineKeyboardButton(text="👥 Список пользователей", callback_data="admin_all_users")], # НОВАЯ КНОПКА
+        [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
+        [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
+    ])
+    await message.answer("🔧 **Админ-панель** ", reply_markup=keyboard)
+
 @dp.message(F.text)
 async def handle_text_answer(message: Message):
     if message.text.startswith("/") or message.text.strip() in ["📚 Обучение", "🧠 Задание", "📖 Справочник", "🏆 Достижения", "🔄 Сменить язык", "🔁 Повторить обучение", "🧪 Повторить тест", "⚙️ Админка", "📋 Инструкция"]:
@@ -559,23 +576,7 @@ async def finish_quiz(message, uid, lang, attempt):
     await message.answer(msg, parse_mode=None)
     await show_main_menu(message, uid, lang)
 
-# --- АДМИНКА ---
-@dp.message(lambda m: m.text.strip() == "⚙️ Админка")
-async def admin_panel(message: Message):
-    uid = message.from_user.id
-    if not is_admin(uid):
-        return await message.answer("❌ Доступ запрещён")
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="➕ Добавить вопрос", callback_data="admin_add")],
-        [InlineKeyboardButton(text=" Удалить вопрос", callback_data="admin_del_req")],
-        [InlineKeyboardButton(text=" Статистика по ID", callback_data="admin_stats_req")],
-        [InlineKeyboardButton(text="📊 Статистика всех", callback_data="admin_stats_all")],
-        [InlineKeyboardButton(text="👥 Список пользователей", callback_data="admin_all_users")], # НОВАЯ КНОПКА
-        [InlineKeyboardButton(text="🧹 Сброс прогресса", callback_data="admin_reset")],
-        [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
-    ])
-    await message.answer("🔧 **Админ-панель** ", reply_markup=keyboard)
+
 
 @dp.callback_query(lambda c: c.data == "admin_back")
 async def admin_back(callback: CallbackQuery):
@@ -803,7 +804,7 @@ async def admin_del_id(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Удалить ещё", callback_data="admin_del_req")], 
         [InlineKeyboardButton(text="🔙 В меню", callback_data="admin_back")]
     ])
-    await message.answer(" Админка", reply_markup=keyboard)
+    await message.answer("Админка", reply_markup=keyboard)
 
 @dp.message(~StateFilter('*'))
 async def handle_unknown(message: Message):
