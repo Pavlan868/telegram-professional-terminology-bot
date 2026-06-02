@@ -624,12 +624,19 @@ async def admin_show_stats(message: Message, state: FSMContext):
 async def admin_all_users(callback: CallbackQuery):
     await callback.answer()
     users = get_all_users_list(limit=20)
-    if not users: await callback.message.answer("Список пользователей пуст."); return
+    if not users:
+        await callback.message.answer("Список пользователей пуст.")
+        return
+    
     text = "**Последние 20 пользователей:**\n\n"
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+    
+    # Собираем кнопки как список списков
+    keyboard_buttons = []
     for u in users:
         name = u.get("first_name") or u.get("username") or f"ID:{u['user_id']}"
-        keyboard.row(InlineKeyboardButton(text=f"{name}", callback_data=f"admin_view_user_{u['user_id']}"))
+        keyboard_buttons.append([InlineKeyboardButton(text=f"{name}", callback_data=f"admin_view_user_{u['user_id']}")])
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
     await callback.message.answer(text, reply_markup=keyboard)
 
 @dp.callback_query(lambda c: c.data.startswith("admin_view_user_"))
