@@ -101,56 +101,6 @@ def load_progress(user_id: int) -> dict:
         return row[0] if isinstance(row[0], dict) else json.loads(row[0])
     return {}
 
-# --- НОВЫЕ ФУНКЦИИ ДЛЯ АДМИНКИ И СПРАВКИ ---
-
-def get_all_users_stats():
-    """Возвращает статистику всех пользователей и список неактивных"""
-    conn = _get_conn()
-    cur = conn.cursor()
-    
-    # Всего пользователей
-    cur.execute("SELECT COUNT(*) FROM users")
-    total = cur.fetchone()[0]
-    
-    # Неактивные (нет активности 7 дней)
-    cur.execute("""
-        SELECT user_id, username, first_name, last_name, last_seen 
-        FROM users 
-        WHERE last_seen < NOW() - INTERVAL '7 days'
-        ORDER BY last_seen DESC
-        LIMIT 50
-    """)
-    inactive = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    
-    return {
-        "total": total,
-        "inactive": [dict(u) for u in inactive]
-    }
-
-def get_all_users_list(limit=20):
-    """Возвращает список пользователей для админки"""
-    conn = _get_conn()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM users ORDER BY last_seen DESC LIMIT %s", (limit,))
-    users = cur.fetchall()
-    cur.close()
-    conn.close()
-    return users
-
-def get_inactive_users_count():
-    conn = _get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM users WHERE last_seen < NOW() - INTERVAL '7 days'")
-    count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    return count
-
-# --- Конец новых функций ---
-
 def get_all_users_count() -> int:
     conn = _get_conn()
     cur = conn.cursor()
@@ -182,16 +132,13 @@ def add_question_to_block(block_id: int, question_dict: dict) -> bool:
                 tasks = block.get("tasks", [])
                 new_id = max((q.get("id", 0) for q in tasks), default=0) + 1
                 
-                # Сохраняем все поля, включая correct_text для текстовых вопросов
                 new_question = {
                     "id": new_id,
                     "question": question_dict.get("question", ""),
                     "options": question_dict.get("options", []),
                     "correct": question_dict.get("correct", 0),
                     "explanation": question_dict.get("explanation", ""),
-                    "code": question_dict.get("code", ""),
-                    "correct_text": question_dict.get("correct_text", ""), # НОВОЕ ПОЛЕ
-                    "difficulty": question_dict.get("difficulty", "medium")
+                    "code": question_dict.get("code", "")
                 }
                 tasks.append(new_question)
                 block["tasks"] = tasks
@@ -215,6 +162,8 @@ def delete_question_from_block(block_id: int, question_id: int) -> bool:
             if block.get("id") == block_id:
                 tasks = block.get("tasks", [])
                 original_count = len(tasks)
+                
+                # Оставляем только те вопросы, ID которых НЕ совпадает с удаляемым
                 block["tasks"] = [q for q in tasks if q.get("id") != question_id]
                 
                 if len(block["tasks"]) < original_count:
@@ -222,8 +171,8 @@ def delete_question_from_block(block_id: int, question_id: int) -> bool:
                         json.dump(data, f, ensure_ascii=False, indent=2)
                     return True
                 else:
-                    return False
-        return False
+                    return False # Вопрос с таким ID не найден
+        return False # Блок не найден
     except Exception as e:
         print(f"[ERROR] delete_question_from_block: {e}")
         return False
